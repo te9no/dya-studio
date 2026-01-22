@@ -6,12 +6,14 @@ export function BatteryPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 rounded-lg bg-electric/10 border border-electric/20">
-            <IconBattery2 size={24} className="text-electric" />
+          <div className="p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
+            <IconBattery2 size={24} className="text-[var(--color-electric)]" />
           </div>
           <div>
-            <h1 className="text-xl font-medium text-white">Battery Status</h1>
-            <p className="text-sm text-white/50">
+            <h1 className="text-xl font-medium text-[var(--color-text)]">
+              Battery Status
+            </h1>
+            <p className="text-sm text-[var(--color-text-muted)]">
               Monitor battery levels and history
             </p>
           </div>
@@ -19,15 +21,19 @@ export function BatteryPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 tablet:grid-cols-3 gap-4 mb-8">
-          <div className="data-card">
+          <div className="glass-card data-card">
             <span className="data-card-label">Left Half</span>
-            <span className="data-card-value text-neon">---%</span>
+            <span className="data-card-value text-[var(--color-neon)]">
+              ---%
+            </span>
           </div>
-          <div className="data-card">
+          <div className="glass-card data-card">
             <span className="data-card-label">Right Half</span>
-            <span className="data-card-value text-neon">---%</span>
+            <span className="data-card-value text-[var(--color-neon)]">
+              ---%
+            </span>
           </div>
-          <div className="data-card">
+          <div className="glass-card data-card">
             <span className="data-card-label">Last Updated</span>
             <span className="data-card-value text-lg">--:--</span>
           </div>
@@ -35,11 +41,11 @@ export function BatteryPage() {
 
         {/* History Chart Placeholder */}
         <div className="glass-card p-6">
-          <h2 className="text-sm font-medium text-white/70 mb-4">
+          <h2 className="text-sm font-medium text-[var(--color-text-secondary)] mb-4">
             Battery History
           </h2>
-          <div className="h-64 flex items-center justify-center border border-dashed border-white/10 rounded-lg">
-            <span className="text-white/30 text-sm">
+          <div className="h-64 flex items-center justify-center border border-dashed border-[var(--color-border)] rounded-lg">
+            <span className="text-[var(--color-text-muted)] text-sm">
               Connect keyboard to view battery history
             </span>
           </div>

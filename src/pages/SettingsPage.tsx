@@ -6,12 +6,17 @@ export function SettingsPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 rounded-lg bg-white/10 border border-white/20">
-            <IconSettings size={24} className="text-white/70" />
+          <div className="p-2 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
+            <IconSettings
+              size={24}
+              className="text-[var(--color-text-secondary)]"
+            />
           </div>
           <div>
-            <h1 className="text-xl font-medium text-white">Settings</h1>
-            <p className="text-sm text-white/50">
+            <h1 className="text-xl font-medium text-[var(--color-text)]">
+              Settings
+            </h1>
+            <p className="text-sm text-[var(--color-text-muted)]">
               Device configuration and parameters
             </p>
           </div>
@@ -21,14 +26,16 @@ export function SettingsPage() {
         <div className="space-y-6">
           {/* Power Management */}
           <div className="glass-card p-6">
-            <h3 className="text-sm font-medium text-white mb-4">
+            <h3 className="text-sm font-medium text-[var(--color-text)] mb-4">
               Power Management
             </h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-white/70">Sleep Timeout</p>
-                  <p className="text-xs text-white/40">
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Sleep Timeout
+                  </p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     Time before keyboard enters sleep mode
                   </p>
                 </div>
@@ -42,8 +49,10 @@ export function SettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-white/70">Deep Sleep Timeout</p>
-                  <p className="text-xs text-white/40">
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Deep Sleep Timeout
+                  </p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     Time before entering deep sleep
                   </p>
                 </div>
@@ -59,28 +68,34 @@ export function SettingsPage() {
 
           {/* Display */}
           <div className="glass-card p-6">
-            <h3 className="text-sm font-medium text-white mb-4">Display</h3>
+            <h3 className="text-sm font-medium text-[var(--color-text)] mb-4">
+              Display
+            </h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-white/70">Screen Brightness</p>
-                  <p className="text-xs text-white/40">
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Screen Brightness
+                  </p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     OLED display brightness level
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-24 h-2 bg-surface rounded-full overflow-hidden">
-                    <div className="h-full w-3/4 bg-white/50 rounded-full" />
+                  <div className="w-24 h-2 bg-[var(--color-surface)] rounded-full overflow-hidden">
+                    <div className="h-full w-3/4 bg-[var(--color-text-muted)] rounded-full" />
                   </div>
-                  <span className="text-sm font-mono text-white/50 w-10">
+                  <span className="text-sm font-mono text-[var(--color-text-muted)] w-10">
                     75%
                   </span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-white/70">Screen Timeout</p>
-                  <p className="text-xs text-white/40">
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Screen Timeout
+                  </p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     Turn off display after inactivity
                   </p>
                 </div>
@@ -96,12 +111,16 @@ export function SettingsPage() {
 
           {/* Keyboard */}
           <div className="glass-card p-6">
-            <h3 className="text-sm font-medium text-white mb-4">Keyboard</h3>
+            <h3 className="text-sm font-medium text-[var(--color-text)] mb-4">
+              Keyboard
+            </h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-white/70">Tapping Term</p>
-                  <p className="text-xs text-white/40">
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Tapping Term
+                  </p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     Duration to distinguish tap from hold
                   </p>
                 </div>
@@ -112,13 +131,17 @@ export function SettingsPage() {
                     value="200"
                     readOnly
                   />
-                  <span className="text-xs text-white/40">ms</span>
+                  <span className="text-xs text-[var(--color-text-muted)]">
+                    ms
+                  </span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-white/70">Quick Tap Term</p>
-                  <p className="text-xs text-white/40">
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Quick Tap Term
+                  </p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     Window for quick tap-tap sequences
                   </p>
                 </div>
@@ -129,7 +152,9 @@ export function SettingsPage() {
                     value="150"
                     readOnly
                   />
-                  <span className="text-xs text-white/40">ms</span>
+                  <span className="text-xs text-[var(--color-text-muted)]">
+                    ms
+                  </span>
                 </div>
               </div>
             </div>
@@ -143,8 +168,10 @@ export function SettingsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-white/70">Reset to Defaults</p>
-                  <p className="text-xs text-white/40">
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Reset to Defaults
+                  </p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     Restore all settings to factory defaults
                   </p>
                 </div>
@@ -154,8 +181,10 @@ export function SettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-white/70">Enter Bootloader</p>
-                  <p className="text-xs text-white/40">
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Enter Bootloader
+                  </p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     Restart keyboard in firmware update mode
                   </p>
                 </div>
@@ -168,8 +197,8 @@ export function SettingsPage() {
         </div>
 
         {/* Info */}
-        <div className="mt-8 p-4 rounded-lg bg-white/5 border border-white/10">
-          <p className="text-xs text-white/40">
+        <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
+          <p className="text-xs text-[var(--color-text-muted)]">
             Connect your keyboard to modify settings. Changes are saved to the
             device immediately.
           </p>

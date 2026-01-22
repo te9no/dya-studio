@@ -32,7 +32,7 @@ export function SplashScreen({
     <AnimatePresence>
       {!isExiting && (
         <motion.div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-dark"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--color-bg)]"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -42,19 +42,19 @@ export function SplashScreen({
 
           {/* Animated rings */}
           <motion.div
-            className="absolute w-[400px] h-[400px] rounded-full border border-electric/20"
+            className="absolute w-[400px] h-[400px] rounded-full border border-[var(--color-electric)]/20"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           />
           <motion.div
-            className="absolute w-[500px] h-[500px] rounded-full border border-electric/10"
+            className="absolute w-[500px] h-[500px] rounded-full border border-[var(--color-electric)]/10"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 1, ease: "easeOut", delay: 0.1 }}
           />
           <motion.div
-            className="absolute w-[600px] h-[600px] rounded-full border border-electric/5"
+            className="absolute w-[600px] h-[600px] rounded-full border border-[var(--color-electric)]/5"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
@@ -83,7 +83,7 @@ export function SplashScreen({
                 ease: "easeInOut",
               }}
             >
-              <DyaLogo className="w-32 h-32 text-white fill-white [&_polygon]:fill-white" />
+              <DyaLogo className="w-16 h-16 [&_polygon]:fill-[var(--color-text)]" />
             </motion.div>
 
             {/* Brand name */}
@@ -93,10 +93,10 @@ export function SplashScreen({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.5 }}
             >
-              <h1 className="text-4xl font-light tracking-[0.3em] text-white">
+              <h1 className="text-4xl font-light tracking-[0.3em] text-[var(--color-text)]">
                 DYA
               </h1>
-              <p className="text-sm font-light tracking-[0.2em] text-white/50 uppercase">
+              <p className="text-sm font-light tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
                 Studio
               </p>
             </motion.div>
@@ -111,7 +111,7 @@ export function SplashScreen({
               {[0, 1, 2].map((i) => (
                 <motion.div
                   key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-electric"
+                  className="w-1.5 h-1.5 rounded-full bg-[var(--color-electric)]"
                   animate={{
                     opacity: [0.3, 1, 0.3],
                     scale: [0.8, 1, 0.8],
@@ -128,7 +128,7 @@ export function SplashScreen({
 
           {/* Tagline */}
           <motion.p
-            className="absolute bottom-12 text-xs font-light tracking-wider text-white/30"
+            className="absolute bottom-12 text-xs font-light tracking-wider text-[var(--color-text-muted)]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}

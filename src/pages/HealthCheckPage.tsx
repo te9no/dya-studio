@@ -47,11 +47,16 @@ const healthItems: HealthItem[] = [
 function StatusIcon({ status }: { status: HealthItem["status"] }) {
   switch (status) {
     case "ok":
-      return <IconCircleCheck size={20} className="text-neon" />;
+      return <IconCircleCheck size={20} className="text-[var(--color-neon)]" />;
     case "error":
       return <IconAlertCircle size={20} className="text-red-500" />;
     default:
-      return <IconCircleDashed size={20} className="text-white/30" />;
+      return (
+        <IconCircleDashed
+          size={20}
+          className="text-[var(--color-text-muted)]"
+        />
+      );
   }
 }
 
@@ -61,12 +66,17 @@ export function HealthCheckPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 rounded-lg bg-neon/10 border border-neon/20">
-            <IconHeartRateMonitor size={24} className="text-neon" />
+          <div className="p-2 rounded-lg bg-[var(--color-neon)]/10 border border-[var(--color-neon)]/20">
+            <IconHeartRateMonitor
+              size={24}
+              className="text-[var(--color-neon)]"
+            />
           </div>
           <div>
-            <h1 className="text-xl font-medium text-white">Health Check</h1>
-            <p className="text-sm text-white/50">
+            <h1 className="text-xl font-medium text-[var(--color-text)]">
+              Health Check
+            </h1>
+            <p className="text-sm text-[var(--color-text-muted)]">
               Circuit and component diagnostics
             </p>
           </div>
@@ -81,18 +91,20 @@ export function HealthCheckPage() {
             >
               <StatusIcon status={item.status} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">{item.name}</p>
-                <p className="text-xs text-white/40 truncate">
+                <p className="text-sm font-medium text-[var(--color-text)]">
+                  {item.name}
+                </p>
+                <p className="text-xs text-[var(--color-text-muted)] truncate">
                   {item.description}
                 </p>
               </div>
               <span
                 className={`text-xs font-mono uppercase ${
                   item.status === "ok"
-                    ? "text-neon"
+                    ? "text-[var(--color-neon)]"
                     : item.status === "error"
                     ? "text-red-500"
-                    : "text-white/30"
+                    : "text-[var(--color-text-muted)]"
                 }`}
               >
                 {item.status}
@@ -109,8 +121,8 @@ export function HealthCheckPage() {
         </div>
 
         {/* Info */}
-        <div className="mt-8 p-4 rounded-lg bg-white/5 border border-white/10">
-          <p className="text-xs text-white/40">
+        <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
+          <p className="text-xs text-[var(--color-text-muted)]">
             Connect your keyboard to run hardware diagnostics. This will check
             communication with all components and report any issues.
           </p>

@@ -14,6 +14,7 @@ import {
   DeviceConnectionProvider,
   ConnectionContext,
 } from "./components/DeviceConnection";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { TabNavigation } from "./components/TabNavigation";
 import type { TabItem } from "./components/TabNavigation";
 import { AppLayout } from "./layouts/AppLayout";
@@ -88,7 +89,7 @@ function App() {
   const [showSplash, setShowSplash] = useState(true);
 
   return (
-    <>
+    <ThemeProvider>
       <AnimatePresence>
         {showSplash && (
           <motion.div
@@ -117,7 +118,7 @@ function App() {
           </DeviceConnectionProvider>
         </motion.div>
       )}
-    </>
+    </ThemeProvider>
   );
 }
 

@@ -5,12 +5,54 @@
 
 @layer base {
   :root {
+    /* Accent colors - same for both themes */
     --color-electric: #00d4ff;
     --color-neon: #00ffcc;
     --color-cyber: #8b5cf6;
-    --color-dark: #0a0a0a;
+
+    /* Dark theme colors (default) */
+    --color-bg: #0a0a0a;
     --color-surface: #141414;
     --color-surface-elevated: #1a1a1a;
+    --color-text: #ffffff;
+    --color-text-secondary: rgba(255, 255, 255, 0.7);
+    --color-text-muted: rgba(255, 255, 255, 0.5);
+    --color-border: rgba(255, 255, 255, 0.1);
+    --color-border-hover: rgba(255, 255, 255, 0.2);
+
+    /* Glass morphism */
+    --glass-bg: rgba(20, 20, 20, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.1);
+
+    /* Scrollbar */
+    --scrollbar-track: #141414;
+    --scrollbar-thumb: #333;
+    --scrollbar-thumb-hover: #444;
+  }
+
+  /* Light theme */
+  :root.light {
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-surface-elevated: #f1f5f9;
+    --color-text: #0f172a;
+    --color-text-secondary: rgba(15, 23, 42, 0.7);
+    --color-text-muted: rgba(15, 23, 42, 0.5);
+    --color-border: rgba(15, 23, 42, 0.1);
+    --color-border-hover: rgba(15, 23, 42, 0.2);
+
+    /* Glass morphism - light */
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(15, 23, 42, 0.1);
+
+    /* Scrollbar - light */
+    --scrollbar-track: #f1f5f9;
+    --scrollbar-thumb: #cbd5e1;
+    --scrollbar-thumb-hover: #94a3b8;
+
+    /* Adjusted accent colors for better contrast on light */
+    --color-electric: #0099cc;
+    --color-neon: #00b894;
   }
 
   * {
@@ -26,10 +68,11 @@
   body {
     margin: 0;
     padding: 0;
-    background: var(--color-dark);
-    color: #ffffff;
+    background: var(--color-bg);
+    color: var(--color-text);
     min-height: 100vh;
     overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   #root {
@@ -45,36 +88,42 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: var(--color-surface);
+    background: var(--scrollbar-track);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #333;
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #444;
+    background: var(--scrollbar-thumb-hover);
   }
 }
 
 /* Custom component styles */
 .glass-card {
-  background: rgba(20, 20, 20, 0.8);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
   border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+:root.light .glass-card {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
 }
 
 .glass-panel {
   background: linear-gradient(
     135deg,
-    rgba(20, 20, 20, 0.9) 0%,
-    rgba(20, 20, 20, 0.7) 100%
+    var(--glass-bg) 0%,
+    rgba(var(--color-surface), 0.7) 100%
   );
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .btn-electric {
@@ -89,10 +138,23 @@
   cursor: pointer;
 }
 
+:root.light .btn-electric {
+  color: var(--color-electric);
+  background: rgba(0, 153, 204, 0.1);
+  border: 1px solid rgba(0, 153, 204, 0.3);
+}
+
 .btn-electric:hover {
   background: rgba(0, 212, 255, 0.3);
   border-color: rgba(0, 212, 255, 0.6);
   box-shadow: 0 0 20px rgba(0, 212, 255, 0.4), 0 0 40px rgba(0, 212, 255, 0.2);
+}
+
+:root.light .btn-electric:hover {
+  background: rgba(0, 153, 204, 0.2);
+  border-color: rgba(0, 153, 204, 0.5);
+  box-shadow: 0 0 20px rgba(0, 153, 204, 0.2);
+  color: white;
 }
 
 .btn-electric:active {
@@ -116,10 +178,23 @@
   cursor: pointer;
 }
 
+:root.light .btn-neon {
+  color: var(--color-neon);
+  background: rgba(0, 184, 148, 0.1);
+  border: 1px solid rgba(0, 184, 148, 0.3);
+}
+
 .btn-neon:hover {
   background: rgba(0, 255, 204, 0.3);
   border-color: rgba(0, 255, 204, 0.6);
   box-shadow: 0 0 20px rgba(0, 255, 204, 0.4), 0 0 40px rgba(0, 255, 204, 0.2);
+}
+
+:root.light .btn-neon:hover {
+  background: rgba(0, 184, 148, 0.2);
+  border-color: rgba(0, 184, 148, 0.5);
+  box-shadow: 0 0 20px rgba(0, 184, 148, 0.2);
+  color: white;
 }
 
 .btn-neon:active {
@@ -130,7 +205,7 @@
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
   background: transparent;
   border: none;
   transition: all 0.2s ease-out;
@@ -138,8 +213,8 @@
 }
 
 .btn-ghost:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  background: var(--color-border);
 }
 
 .btn-ghost:active {
@@ -158,8 +233,12 @@
   animation: pulse-status 2s ease-in-out infinite;
 }
 
+:root.light .status-indicator.connected {
+  box-shadow: 0 0 10px rgba(0, 184, 148, 0.4);
+}
+
 .status-indicator.disconnected {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--color-text-muted);
 }
 
 .status-indicator.error {
@@ -172,7 +251,7 @@
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-muted);
   transition: color 0.2s;
   cursor: pointer;
   background: transparent;
@@ -180,7 +259,7 @@
 }
 
 .tab-trigger:hover {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-secondary);
 }
 
 .tab-trigger:focus {
@@ -203,24 +282,33 @@
   box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
 }
 
+:root.light .tab-trigger[data-state="active"]::after {
+  box-shadow: 0 0 8px rgba(0, 153, 204, 0.3);
+}
+
 .input-field {
   width: 100%;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   background: var(--color-surface);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   transition: all 0.2s;
 }
 
 .input-field::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--color-text-muted);
 }
 
 .input-field:focus {
   outline: none;
   border-color: rgba(0, 212, 255, 0.5);
   box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+:root.light .input-field:focus {
+  border-color: rgba(0, 153, 204, 0.5);
+  box-shadow: 0 0 10px rgba(0, 153, 204, 0.15);
 }
 
 .data-card {
@@ -233,7 +321,7 @@
 .data-card-label {
   font-size: 0.75rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -241,7 +329,7 @@
 .data-card-value {
   font-size: 1.5rem;
   font-weight: 600;
-  color: white;
+  color: var(--color-text);
 }
 
 /* Utility classes */
@@ -249,12 +337,24 @@
   text-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.3);
 }
 
+:root.light .text-glow-electric {
+  text-shadow: 0 0 10px rgba(0, 153, 204, 0.3), 0 0 20px rgba(0, 153, 204, 0.15);
+}
+
 .text-glow-neon {
   text-shadow: 0 0 10px rgba(0, 255, 204, 0.5), 0 0 20px rgba(0, 255, 204, 0.3);
 }
 
+:root.light .text-glow-neon {
+  text-shadow: 0 0 10px rgba(0, 184, 148, 0.3), 0 0 20px rgba(0, 184, 148, 0.15);
+}
+
 .bg-gradient-dark {
-  background: linear-gradient(180deg, #0a0a0a 0%, #141414 100%);
+  background: linear-gradient(
+    180deg,
+    var(--color-bg) 0%,
+    var(--color-surface) 100%
+  );
 }
 
 .bg-gradient-cyber {
@@ -265,9 +365,48 @@
   );
 }
 
+:root.light .bg-gradient-cyber {
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.05) 0%,
+    rgba(0, 153, 204, 0.05) 100%
+  );
+}
+
 .border-glow-electric {
   border-color: rgba(0, 212, 255, 0.3);
   box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+:root.light .border-glow-electric {
+  border-color: rgba(0, 153, 204, 0.3);
+  box-shadow: inset 0 0 20px rgba(0, 153, 204, 0.05);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  position: relative;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+  border-color: var(--color-border-hover);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
 }
 
 /* Reduced motion */

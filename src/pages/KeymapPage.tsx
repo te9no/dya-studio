@@ -7,12 +7,17 @@ export function KeymapPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-electric/10 border border-electric/20">
-              <IconKeyboard size={24} className="text-electric" />
+            <div className="p-2 rounded-lg bg-[var(--color-electric)]/10 border border-[var(--color-electric)]/20">
+              <IconKeyboard
+                size={24}
+                className="text-[var(--color-electric)]"
+              />
             </div>
             <div>
-              <h1 className="text-xl font-medium text-white">Keymap</h1>
-              <p className="text-sm text-white/50">
+              <h1 className="text-xl font-medium text-[var(--color-text)]">
+                Keymap
+              </h1>
+              <p className="text-sm text-[var(--color-text-muted)]">
                 Configure key bindings and layers
               </p>
             </div>
@@ -30,8 +35,8 @@ export function KeymapPage() {
               key={layer}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 index === 0
-                  ? "bg-electric/20 text-electric border border-electric/30"
-                  : "text-white/50 hover:text-white/70 hover:bg-white/5"
+                  ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
               }`}
             >
               {layer}
@@ -49,7 +54,7 @@ export function KeymapPage() {
                   {[0, 1, 2, 3, 4, 5].map((col) => (
                     <div
                       key={col}
-                      className="w-12 h-12 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-xs text-white/30 hover:border-electric/50 hover:bg-electric/5 cursor-pointer transition-colors"
+                      className="w-12 h-12 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-xs text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5 cursor-pointer transition-colors"
                     >
                       {row === 0 && ["Esc", "1", "2", "3", "4", "5"][col]}
                       {row === 1 && ["Tab", "Q", "W", "E", "R", "T"][col]}
@@ -64,7 +69,7 @@ export function KeymapPage() {
                 {["Alt", "Cmd", "Space"].map((key) => (
                   <div
                     key={key}
-                    className="w-14 h-10 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-xs text-white/30 hover:border-electric/50 hover:bg-electric/5 cursor-pointer transition-colors"
+                    className="w-14 h-10 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-xs text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5 cursor-pointer transition-colors"
                   >
                     {key}
                   </div>
@@ -79,7 +84,7 @@ export function KeymapPage() {
                   {[0, 1, 2, 3, 4, 5].map((col) => (
                     <div
                       key={col}
-                      className="w-12 h-12 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-xs text-white/30 hover:border-electric/50 hover:bg-electric/5 cursor-pointer transition-colors"
+                      className="w-12 h-12 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-xs text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5 cursor-pointer transition-colors"
                     >
                       {row === 0 && ["6", "7", "8", "9", "0", "Del"][col]}
                       {row === 1 && ["Y", "U", "I", "O", "P", "\\"][col]}
@@ -94,7 +99,7 @@ export function KeymapPage() {
                 {["Enter", "Bksp", "Layer"].map((key) => (
                   <div
                     key={key}
-                    className="w-14 h-10 rounded-lg bg-surface border border-white/10 flex items-center justify-center text-xs text-white/30 hover:border-electric/50 hover:bg-electric/5 cursor-pointer transition-colors"
+                    className="w-14 h-10 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-xs text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5 cursor-pointer transition-colors"
                   >
                     {key}
                   </div>
@@ -105,8 +110,8 @@ export function KeymapPage() {
         </div>
 
         {/* Info */}
-        <div className="mt-8 p-4 rounded-lg bg-white/5 border border-white/10">
-          <p className="text-xs text-white/40">
+        <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
+          <p className="text-xs text-[var(--color-text-muted)]">
             Connect your keyboard to edit keymaps. Click on a key to modify its
             binding.
           </p>
