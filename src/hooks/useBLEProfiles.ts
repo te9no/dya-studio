@@ -5,6 +5,8 @@ import {
   Response,
 } from "../proto/zmk/ble_management/ble_management";
 
+// Subsystem identifier for ZMK BLE management custom protocol
+// This matches the identifier registered in the ZMK firmware module
 const SUBSYSTEM_IDENTIFIER = "zmk__ble_management";
 
 export interface BLEProfile {
@@ -61,7 +63,16 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
       if (responsePayload) {
         const resp = Response.decode(responsePayload);
         if (resp.getProfiles) {
-          setProfiles(resp.getProfiles.profiles as BLEProfile[]);
+          // The protobuf-generated ProfileInfo matches our BLEProfile interface
+          const profiles = resp.getProfiles.profiles.map((p) => ({
+            index: p.index,
+            name: p.name,
+            address: p.address,
+            isConnected: p.isConnected,
+            isOpen: p.isOpen,
+            isActive: p.isActive,
+          }));
+          setProfiles(profiles);
           setMaxProfiles(resp.getProfiles.maxProfiles);
         } else if (resp.error) {
           setError(resp.error.message);

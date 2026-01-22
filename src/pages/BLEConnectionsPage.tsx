@@ -132,7 +132,7 @@ export function BLEConnectionsPage() {
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
                             placeholder="Device name"
-                            maxLength={31}
+                            maxLength={31} // ZMK firmware constraint for BLE name storage
                             className="input-field flex-1 text-sm"
                             disabled={isLoading}
                           />
