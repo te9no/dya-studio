@@ -1,0 +1,223 @@
+import { useState, useEffect, useCallback, useContext } from "react";
+import { ZMKCustomSubsystem, ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
+import {
+  Request,
+  Response,
+} from "../proto/zmk/ble_management/ble_management";
+
+const SUBSYSTEM_IDENTIFIER = "zmk__ble_management";
+
+export interface BLEProfile {
+  index: number;
+  name: string;
+  address: string;
+  isConnected: boolean;
+  isOpen: boolean;
+  isActive: boolean;
+}
+
+export interface UseBLEProfilesReturn {
+  profiles: BLEProfile[];
+  maxProfiles: number;
+  isLoading: boolean;
+  error: string | null;
+  loadProfiles: () => Promise<void>;
+  switchProfile: (index: number) => Promise<void>;
+  unpairProfile: (index: number) => Promise<void>;
+  setProfileName: (index: number, name: string) => Promise<void>;
+}
+
+export function useBLEProfiles(): UseBLEProfilesReturn {
+  const zmkApp = useContext(ZMKAppContext);
+  const [profiles, setProfiles] = useState<BLEProfile[]>([]);
+  const [maxProfiles, setMaxProfiles] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const subsystem = zmkApp?.findSubsystem(SUBSYSTEM_IDENTIFIER);
+
+  const loadProfiles = useCallback(async () => {
+    if (!zmkApp?.state.connection || !subsystem) {
+      setError("Not connected to device or subsystem not found");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const service = new ZMKCustomSubsystem(
+        zmkApp.state.connection,
+        subsystem.index
+      );
+
+      const request = Request.create({
+        getProfiles: {},
+      });
+
+      const payload = Request.encode(request).finish();
+      const responsePayload = await service.callRPC(payload);
+
+      if (responsePayload) {
+        const resp = Response.decode(responsePayload);
+        if (resp.getProfiles) {
+          setProfiles(resp.getProfiles.profiles as BLEProfile[]);
+          setMaxProfiles(resp.getProfiles.maxProfiles);
+        } else if (resp.error) {
+          setError(resp.error.message);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load profiles:", err);
+      setError(
+        `Failed to load profiles: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [zmkApp?.state.connection, subsystem]);
+
+  const switchProfile = useCallback(
+    async (index: number) => {
+      if (!zmkApp?.state.connection || !subsystem) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystem.index
+        );
+
+        const request = Request.create({
+          switchProfile: { index },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+          if (resp.switchProfile?.success) {
+            await loadProfiles();
+          } else if (resp.error) {
+            setError(resp.error.message);
+          } else {
+            setError("Failed to switch profile");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to switch profile:", err);
+        setError(
+          `Failed to switch profile: ${err instanceof Error ? err.message : "Unknown error"}`
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [zmkApp?.state.connection, subsystem, loadProfiles]
+  );
+
+  const unpairProfile = useCallback(
+    async (index: number) => {
+      if (!zmkApp?.state.connection || !subsystem) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystem.index
+        );
+
+        const request = Request.create({
+          unpairProfile: { index },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+          if (resp.unpairProfile?.success) {
+            await loadProfiles();
+          } else if (resp.error) {
+            setError(resp.error.message);
+          } else {
+            setError("Failed to unpair profile");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to unpair profile:", err);
+        setError(
+          `Failed to unpair profile: ${err instanceof Error ? err.message : "Unknown error"}`
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [zmkApp?.state.connection, subsystem, loadProfiles]
+  );
+
+  const setProfileName = useCallback(
+    async (index: number, name: string) => {
+      if (!zmkApp?.state.connection || !subsystem) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystem.index
+        );
+
+        const request = Request.create({
+          setProfileName: { index, name },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+          if (resp.setProfileName?.success) {
+            await loadProfiles();
+          } else if (resp.error) {
+            setError(resp.error.message);
+          } else {
+            setError("Failed to set profile name");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to set profile name:", err);
+        setError(
+          `Failed to set profile name: ${err instanceof Error ? err.message : "Unknown error"}`
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [zmkApp?.state.connection, subsystem, loadProfiles]
+  );
+
+  // Load profiles when connection or subsystem changes
+  useEffect(() => {
+    if (subsystem && zmkApp?.state.connection) {
+      loadProfiles();
+    }
+  }, [subsystem, zmkApp?.state.connection, loadProfiles]);
+
+  return {
+    profiles,
+    maxProfiles,
+    isLoading,
+    error,
+    loadProfiles,
+    switchProfile,
+    unpairProfile,
+    setProfileName,
+  };
+}

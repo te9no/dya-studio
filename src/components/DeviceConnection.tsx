@@ -1,21 +1,7 @@
 import type { ReactNode } from "react";
-import { createContext, useState, useCallback } from "react";
-
-// Web Serial API types (not included in standard TypeScript lib)
-interface SerialPort {
-  open(options: { baudRate: number }): Promise<void>;
-  close(): Promise<void>;
-}
-
-interface Serial {
-  requestPort(): Promise<SerialPort>;
-}
-
-declare global {
-  interface Navigator {
-    serial?: Serial;
-  }
-}
+import { createContext, useCallback } from "react";
+import { useZMKApp, ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
+import { connect as connectSerial } from "@zmkfirmware/zmk-studio-ts-client/transport/serial";
 
 // Simple connection context for UI components
 interface ConnectionContextValue {
@@ -40,75 +26,34 @@ interface DeviceConnectionProviderProps {
   children: ReactNode;
 }
 
-// TODO: Replace with actual ZMK connection when library is properly resolved
-// import { ZMKConnection, ZMKAppContext } from '@cormoran/zmk-studio-react-hook';
-// import { connect as connectSerial } from '@zmkfirmware/zmk-studio-ts-client/transport/serial';
-
 export function DeviceConnectionProvider({
   children,
 }: DeviceConnectionProviderProps) {
-  const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [deviceName, setDeviceName] = useState<string | undefined>(undefined);
+  const zmkApp = useZMKApp();
 
   const handleConnect = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+    await zmkApp.connect(connectSerial);
+  }, [zmkApp]);
 
-    try {
-      // Check if Web Serial API is available
-      if (!navigator.serial) {
-        throw new Error("Web Serial API is not supported in this browser");
-      }
+  const handleDisconnect = useCallback(() => {
+    zmkApp.disconnect();
+  }, [zmkApp]);
 
-      // Request serial port access
-      const port = await navigator.serial.requestPort();
-      await port.open({ baudRate: 115200 });
-
-      // For now, mock the connection success
-      // TODO: Implement actual ZMK protocol communication
-      setDeviceName("DYA Keyboard");
-      setIsConnected(true);
-
-      // Store port reference for later use
-      (window as unknown as { __zmkPort?: SerialPort }).__zmkPort = port;
-    } catch (err) {
-      if (err instanceof Error && err.name !== "NotFoundError") {
-        setError(err.message);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const handleDisconnect = useCallback(async () => {
-    try {
-      const port = (window as unknown as { __zmkPort?: SerialPort }).__zmkPort;
-      if (port) {
-        await port.close();
-        delete (window as unknown as { __zmkPort?: SerialPort }).__zmkPort;
-      }
-    } catch {
-      // Ignore close errors
-    }
-    setIsConnected(false);
-    setDeviceName(undefined);
-  }, []);
+  const connectionValue: ConnectionContextValue = {
+    isConnected: zmkApp.isConnected,
+    deviceName: zmkApp.state.deviceInfo?.name,
+    onConnect: handleConnect,
+    onDisconnect: handleDisconnect,
+    isLoading: zmkApp.state.isLoading,
+    error: zmkApp.state.error,
+  };
 
   return (
-    <ConnectionContext.Provider
-      value={{
-        isConnected,
-        deviceName,
-        onConnect: handleConnect,
-        onDisconnect: handleDisconnect,
-        isLoading,
-        error,
-      }}
-    >
-      {children}
-    </ConnectionContext.Provider>
+    <ZMKAppContext.Provider value={zmkApp}>
+      <ConnectionContext.Provider value={connectionValue}>
+        {children}
+      </ConnectionContext.Provider>
+    </ZMKAppContext.Provider>
   );
 }
 
