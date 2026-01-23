@@ -24,7 +24,7 @@ if (typeof global.ReadableStream === "undefined") {
     cancel() {
       return Promise.resolve();
     }
-  } as any;
+  } as unknown as ReadableStream;
 }
 
 if (typeof global.WritableStream === "undefined") {
@@ -40,7 +40,7 @@ if (typeof global.WritableStream === "undefined") {
     abort() {
       return Promise.resolve();
     }
-  } as any;
+  } as unknown as WritableStream;
 }
 
 // Mock window.matchMedia
