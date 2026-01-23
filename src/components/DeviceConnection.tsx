@@ -41,7 +41,7 @@ export function DeviceConnectionProvider({
 
   const connectionValue: ConnectionContextValue = {
     isConnected: zmkApp.isConnected,
-    deviceName: (zmkApp.state.deviceInfo as any)?.name,
+    deviceName: zmkApp.state.deviceInfo?.name,
     onConnect: handleConnect,
     onDisconnect: handleDisconnect,
     isLoading: zmkApp.state.isLoading,

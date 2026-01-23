@@ -4,7 +4,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BLEConnectionsPage } from '../BLEConnectionsPage';
 import { ConnectionContext } from '../../components/DeviceConnection';
-import { ZMKAppContext } from '@cormoran/zmk-studio-react-hook';
+import { ZMKAppProvider, createMockZMKApp } from '@cormoran/zmk-studio-react-hook/testing';
 
 // Mock the useBLEProfiles hook
 jest.mock('../../hooks/useBLEProfiles');
@@ -20,21 +20,6 @@ describe('BLEConnectionsPage', () => {
     onDisconnect: jest.fn(),
     isLoading: false,
     error: null,
-  };
-
-  const mockZMKAppContext = {
-    state: {
-      connection: null,
-      deviceInfo: null,
-      customSubsystems: null,
-      isLoading: false,
-      error: null,
-    },
-    connect: jest.fn(),
-    disconnect: jest.fn(),
-    findSubsystem: jest.fn(),
-    isConnected: false,
-    onNotification: jest.fn(),
   };
 
   const mockProfiles = [
@@ -83,11 +68,13 @@ describe('BLEConnectionsPage', () => {
     const profileHookReturn = { ...mockUseBLEProfiles(), ...profileOverrides };
     mockUseBLEProfiles.mockReturnValue(profileHookReturn);
 
+    const mockZMKApp = createMockZMKApp();
+
     return render(
       <ConnectionContext.Provider value={connectionContext}>
-        <ZMKAppContext.Provider value={mockZMKAppContext}>
+        <ZMKAppProvider value={mockZMKApp}>
           <BLEConnectionsPage />
-        </ZMKAppContext.Provider>
+        </ZMKAppProvider>
       </ConnectionContext.Provider>
     );
   };

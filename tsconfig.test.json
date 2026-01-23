@@ -6,9 +6,8 @@
     "moduleResolution": "node",
     "verbatimModuleSyntax": false,
     "paths": {
-      "@cormoran/zmk-studio-react-hook": ["./src/__mocks__/@cormoran/zmk-studio-react-hook"],
-      "@zmkfirmware/zmk-studio-ts-client/transport/serial": ["./src/__mocks__/@zmkfirmware/zmk-studio-ts-client/transport/serial"]
+      "@cormoran/zmk-studio-react-hook/testing": ["./node_modules/@cormoran/zmk-studio-react-hook/lib/testing/index.d.ts"]
     }
   },
-  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/*.spec.ts", "src/**/*.spec.tsx", "src/setupTests.ts", "src/__mocks__/**/*"]
+  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/*.spec.ts", "src/**/*.spec.tsx", "src/setupTests.ts"]
 }
