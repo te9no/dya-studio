@@ -13,7 +13,10 @@
 export const HID_USAGE_PAGE_KEYBOARD = 0x07;
 export const HID_USAGE_PAGE_CONSUMER = 0x0c;
 
-// Helper to create HID usage from page and code
+/**
+ * Create a combined HID usage value from page and code.
+ * Format: upper 16 bits = page, lower 16 bits = code
+ */
 export function createHidUsage(page: number, code: number): number {
   return (page << 16) | code;
 }

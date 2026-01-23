@@ -13,6 +13,7 @@ import type { KeyPhysicalAttrs, BehaviorBinding } from "../hooks/useKeymap";
 // ZMK uses 1/100 of a "unit" (usually 19.05mm key spacing)
 // We'll use a reasonable scale for display
 const SCALE = 0.5; // Adjust as needed for display
+const PIXELS_PER_UNIT = 48; // Pixels per key unit
 
 interface PhysicalKeyProps {
   /** Physical attributes of the key (position, size, rotation) */
@@ -50,15 +51,15 @@ export function PhysicalKey({
   // ZMK uses centimils (1/100 of a key unit) for dimensions
   // Standard key unit is usually around 19.05mm = 1900 centimils
   const style = useMemo(() => {
-    const width = (attrs.width / 100) * SCALE * 48; // 48px per unit
-    const height = (attrs.height / 100) * SCALE * 48;
-    const x = (attrs.x / 100) * SCALE * 48;
-    const y = (attrs.y / 100) * SCALE * 48;
+    const width = (attrs.width / 100) * SCALE * PIXELS_PER_UNIT;
+    const height = (attrs.height / 100) * SCALE * PIXELS_PER_UNIT;
+    const x = (attrs.x / 100) * SCALE * PIXELS_PER_UNIT;
+    const y = (attrs.y / 100) * SCALE * PIXELS_PER_UNIT;
 
     // Rotation: r is in centidegrees, rx and ry are rotation center
     const rotation = attrs.r / 100;
-    const rotationCenterX = (attrs.rx / 100) * SCALE * 48;
-    const rotationCenterY = (attrs.ry / 100) * SCALE * 48;
+    const rotationCenterX = (attrs.rx / 100) * SCALE * PIXELS_PER_UNIT;
+    const rotationCenterY = (attrs.ry / 100) * SCALE * PIXELS_PER_UNIT;
 
     return {
       width: `${Math.max(width, 20)}px`,

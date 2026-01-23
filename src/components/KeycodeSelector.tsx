@@ -189,9 +189,15 @@ export function KeycodeSelector({
       );
 
       if (kpBehavior) {
+        // Check if keycode already has a usage page (upper 16 bits)
+        // Consumer keycodes are already full HID usage values
+        const param1 = keycode.code > 0xffff
+          ? keycode.code  // Already a full HID usage
+          : createHidUsage(HID_USAGE_PAGE_KEYBOARD, keycode.code);  // Add keyboard page
+        
         onSelect({
           behaviorId: kpBehavior.id,
-          param1: createHidUsage(HID_USAGE_PAGE_KEYBOARD, keycode.code),
+          param1,
           param2: 0,
         });
       } else {
