@@ -158,7 +158,6 @@ export function BLEConnectionsPage() {
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium text-[var(--color-text-secondary)]">
                               {profile.name || `Profile ${profile.index + 1}`}
-                              {profile.isActive && " ⭐"}
                             </p>
                             {!profile.isOpen && (
                               <button
@@ -185,16 +184,6 @@ export function BLEConnectionsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {!profile.isActive && (
-                      <button
-                        className="btn-ghost text-sm flex items-center gap-1.5"
-                        onClick={() => handleSwitch(profile.index)}
-                        disabled={isLoading}
-                      >
-                        <IconLink size={16} />
-                        <span className="hidden tablet:inline">Switch</span>
-                      </button>
-                    )}
                     {!profile.isOpen && (
                       <button
                         className="btn-ghost text-sm flex items-center gap-1.5 text-red-400 hover:text-red-300"
@@ -204,6 +193,18 @@ export function BLEConnectionsPage() {
                         <IconLinkOff size={16} />
                         <span className="hidden tablet:inline">Unpair</span>
                       </button>
+                    )}
+                    {!profile.isActive ? (
+                      <button
+                        className="btn-ghost text-sm flex items-center gap-1.5"
+                        onClick={() => handleSwitch(profile.index)}
+                        disabled={isLoading}
+                      >
+                        <IconLink size={16} />
+                        <span className="hidden tablet:inline">Switch</span>
+                      </button>
+                    ) : (
+                      <div className="w-[72px]" aria-hidden="true"></div>
                     )}
                   </div>
                 </div>
@@ -218,7 +219,7 @@ export function BLEConnectionsPage() {
                   onClick={loadProfiles}
                   disabled={isLoading}
                 >
-                  🔄 Refresh
+                  Refresh
                 </button>
               </div>
             )}
@@ -229,8 +230,8 @@ export function BLEConnectionsPage() {
         <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
           <p className="text-xs text-[var(--color-text-muted)]">
             Connect your keyboard to manage BLE profiles. Each profile can be
-            paired to a different host device. The active profile is marked with
-            a star (⭐).
+            paired to a different host device. The active profile is highlighted
+            with a colored border.
           </p>
         </div>
       </div>
