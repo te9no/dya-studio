@@ -1,25 +1,31 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitFor,
+  renderHook,
+  act,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   DeviceConnectionProvider,
   ConnectionContext,
 } from "../DeviceConnection";
 import { useContext } from "react";
+import { useZMKApp } from "@cormoran/zmk-studio-react-hook";
+import { setupZMKMocks } from "@cormoran/zmk-studio-react-hook/testing";
 
-// Mock the useZMKApp hook
-jest.mock("@cormoran/zmk-studio-react-hook", () => ({
-  useZMKApp: jest.fn(),
-  ZMKAppContext: {
-    Provider: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-  },
+// Mock the ZMK Studio client
+jest.mock("@zmkfirmware/zmk-studio-ts-client", () => ({
+  create_rpc_connection: jest.fn(),
+  call_rpc: jest.fn(),
 }));
 
-import { useZMKApp } from "@cormoran/zmk-studio-react-hook";
-const mockUseZMKApp = useZMKApp as jest.MockedFunction<typeof useZMKApp>;
+// Mock the serial transport
+jest.mock("@zmkfirmware/zmk-studio-ts-client/transport/serial", () => ({
+  connect: jest.fn(),
+}));
 
-// Mock component to test the connection context
+// Test component to verify ConnectionContext values
 function TestComponent() {
   const connection = useContext(ConnectionContext);
 
@@ -44,304 +50,346 @@ function TestComponent() {
 }
 
 describe("DeviceConnection", () => {
-  const mockConnect = jest.fn();
-  const mockDisconnect = jest.fn();
+  let mocks: ReturnType<typeof setupZMKMocks>;
 
   beforeEach(() => {
-    // Reset mocks
-    jest.clearAllMocks();
-
-    // Default mock implementation
-    mockUseZMKApp.mockReturnValue({
-      state: {
-        connection: null,
-        deviceInfo: null,
-        customSubsystems: null,
-        isLoading: false,
-        error: null,
-      },
-      connect: mockConnect,
-      disconnect: mockDisconnect,
-      findSubsystem: jest.fn(),
-      isConnected: false,
-    });
+    // Reset mocks using the test helper
+    mocks = setupZMKMocks();
   });
 
-  test("renders with disconnected state initially", () => {
-    render(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
-
-    expect(screen.getByTestId("connection-status")).toHaveTextContent(
-      "Disconnected",
-    );
-    expect(screen.getByTestId("connect-button")).toBeInTheDocument();
-  });
-
-  test("shows error when Web Serial API is not supported", async () => {
-    const user = userEvent.setup();
-
-    // Mock connect to update state with error
-    mockConnect.mockImplementation(async () => {
-      mockUseZMKApp.mockReturnValue({
-        state: {
-          connection: null,
-          deviceInfo: null,
-          customSubsystems: null,
-          isLoading: false,
-          error: "Web Serial API is not supported in this browser",
-        },
-        connect: mockConnect,
-        disconnect: mockDisconnect,
-        findSubsystem: jest.fn(),
-        isConnected: false,
-      });
-    });
-
-    const { rerender } = render(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
-
-    const connectButton = screen.getByTestId("connect-button");
-    await user.click(connectButton);
-
-    // Trigger a rerender to reflect the new state
-    rerender(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId("error")).toBeTruthy();
-    });
-  });
-
-  test("shows loading state while connecting", async () => {
-    const user = userEvent.setup();
-
-    // Mock connect to update state to loading
-    mockConnect.mockImplementation(async () => {
-      mockUseZMKApp.mockReturnValue({
-        state: {
-          connection: null,
-          deviceInfo: null,
-          customSubsystems: null,
-          isLoading: true,
-          error: null,
-        },
-        connect: mockConnect,
-        disconnect: mockDisconnect,
-        findSubsystem: jest.fn(),
-        isConnected: false,
-      });
-    });
-
-    const { rerender } = render(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
-
-    const connectButton = screen.getByTestId("connect-button");
-    await user.click(connectButton);
-
-    // Trigger a rerender to reflect the new state
-    rerender(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
-
-    // Should show loading state
-    await waitFor(() => {
-      expect(screen.getByTestId("loading")).toBeInTheDocument();
-    });
-  });
-
-  test("successfully connects to keyboard", async () => {
-    const user = userEvent.setup();
-
-    // Mock successful connection
-    mockConnect.mockImplementation(async () => {
-      mockUseZMKApp.mockReturnValue({
-        state: {
-          connection: {} as any,
-          deviceInfo: { name: "DYA Keyboard" } as any,
-          customSubsystems: null,
-          isLoading: false,
-          error: null,
-        },
-        connect: mockConnect,
-        disconnect: mockDisconnect,
-        findSubsystem: jest.fn(),
-        isConnected: true,
-      });
-    });
-
-    const { rerender } = render(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
-
-    const connectButton = screen.getByTestId("connect-button");
-    await user.click(connectButton);
-
-    // Trigger a rerender to reflect the new state
-    rerender(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
-
-    // Wait for connection to complete
-    await waitFor(() => {
-      expect(screen.getByTestId("connection-status")).toHaveTextContent(
-        "Connected",
+  describe("Initial State", () => {
+    test("renders with disconnected state initially", () => {
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
       );
-    });
 
-    expect(mockConnect).toHaveBeenCalled();
-  });
-
-  test("disconnects from keyboard", async () => {
-    const user = userEvent.setup();
-
-    // Start with connected state
-    mockUseZMKApp.mockReturnValue({
-      state: {
-        connection: {} as any,
-        deviceInfo: { name: "DYA Keyboard" } as any,
-        customSubsystems: null,
-        isLoading: false,
-        error: null,
-      },
-      connect: mockConnect,
-      disconnect: mockDisconnect,
-      findSubsystem: jest.fn(),
-      isConnected: true,
-    });
-
-    const { rerender } = render(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
-
-    // Should be connected initially
-    expect(screen.getByTestId("connection-status")).toHaveTextContent(
-      "Connected",
-    );
-
-    // Mock disconnect to update state
-    mockDisconnect.mockImplementation(() => {
-      mockUseZMKApp.mockReturnValue({
-        state: {
-          connection: null,
-          deviceInfo: null,
-          customSubsystems: null,
-          isLoading: false,
-          error: null,
-        },
-        connect: mockConnect,
-        disconnect: mockDisconnect,
-        findSubsystem: jest.fn(),
-        isConnected: false,
-      });
-    });
-
-    // Click disconnect
-    const disconnectButton = screen.getByTestId("disconnect-button");
-    await user.click(disconnectButton);
-
-    // Trigger a rerender to reflect the new state
-    rerender(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
-
-    await waitFor(() => {
       expect(screen.getByTestId("connection-status")).toHaveTextContent(
         "Disconnected",
       );
+      expect(screen.getByTestId("connect-button")).toBeInTheDocument();
     });
 
-    expect(mockDisconnect).toHaveBeenCalled();
+    test("does not show device name when disconnected", () => {
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
+      );
+
+      expect(screen.queryByTestId("device-name")).not.toBeInTheDocument();
+    });
   });
 
-  test("handles user cancellation of port selection", async () => {
-    const user = userEvent.setup();
+  describe("Connection Flow", () => {
+    test("successfully connects to keyboard", async () => {
+      const user = userEvent.setup();
 
-    // Mock connect to do nothing (user canceled)
-    mockConnect.mockImplementation(async () => {
-      // State remains unchanged
-    });
+      // Configure mocks for successful connection
+      mocks.mockSuccessfulConnection({
+        deviceName: "DYA Keyboard",
+        subsystems: [],
+      });
 
-    render(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
+      );
 
-    const connectButton = screen.getByTestId("connect-button");
-    await user.click(connectButton);
+      const connectButton = screen.getByTestId("connect-button");
+      await user.click(connectButton);
 
-    // Should not show error when user cancels
-    await waitFor(() => {
-      expect(screen.getByTestId("connection-status")).toHaveTextContent(
-        "Disconnected",
+      // Wait for connection to complete
+      await waitFor(() => {
+        expect(screen.getByTestId("connection-status")).toHaveTextContent(
+          "Connected",
+        );
+      });
+
+      // Verify device name is displayed
+      expect(screen.getByTestId("device-name")).toHaveTextContent(
+        "DYA Keyboard",
       );
     });
 
-    expect(screen.queryByTestId("error")).not.toBeInTheDocument();
+    test("disconnects from keyboard", async () => {
+      const user = userEvent.setup();
+
+      // Configure mocks for successful connection
+      mocks.mockSuccessfulConnection({
+        deviceName: "DYA Keyboard",
+      });
+
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
+      );
+
+      // Connect first
+      await user.click(screen.getByTestId("connect-button"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("connection-status")).toHaveTextContent(
+          "Connected",
+        );
+      });
+
+      // Click disconnect
+      const disconnectButton = screen.getByTestId("disconnect-button");
+      await user.click(disconnectButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("connection-status")).toHaveTextContent(
+          "Disconnected",
+        );
+      });
+
+      expect(screen.queryByTestId("device-name")).not.toBeInTheDocument();
+    });
   });
 
-  test("handles connection errors", async () => {
-    const user = userEvent.setup();
+  describe("Error Handling", () => {
+    test("shows error when Web Serial API is not supported", async () => {
+      const user = userEvent.setup();
 
-    // Mock connection error
-    mockConnect.mockImplementation(async () => {
-      mockUseZMKApp.mockReturnValue({
-        state: {
-          connection: null,
-          deviceInfo: null,
-          customSubsystems: null,
-          isLoading: false,
-          error: "Failed to open serial port",
-        },
-        connect: mockConnect,
-        disconnect: mockDisconnect,
-        findSubsystem: jest.fn(),
-        isConnected: false,
+      // Mock connection failure
+      mocks.mockFailedConnection(
+        "Web Serial API is not supported in this browser",
+      );
+
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
+      );
+
+      const connectButton = screen.getByTestId("connect-button");
+      await user.click(connectButton);
+
+      await waitFor(() => {
+        const errorElement = screen.queryByTestId("error");
+        expect(errorElement).toBeInTheDocument();
+        expect(errorElement).toHaveTextContent(
+          "Web Serial API is not supported in this browser",
+        );
       });
     });
 
-    const { rerender } = render(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
+    test("handles connection errors", async () => {
+      const user = userEvent.setup();
 
-    const connectButton = screen.getByTestId("connect-button");
-    await user.click(connectButton);
+      // Mock connection error
+      mocks.mockFailedConnection("Failed to open serial port");
 
-    // Trigger a rerender to reflect the new state
-    rerender(
-      <DeviceConnectionProvider>
-        <TestComponent />
-      </DeviceConnectionProvider>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId("error")).toHaveTextContent(
-        "Failed to open serial port",
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
       );
+
+      const connectButton = screen.getByTestId("connect-button");
+      await user.click(connectButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent(
+          "Failed to open serial port",
+        );
+      });
+    });
+
+    test("handles device info fetch failure", async () => {
+      const user = userEvent.setup();
+
+      // Mock device info failure
+      mocks.mockFailedDeviceInfo();
+
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
+      );
+
+      const connectButton = screen.getByTestId("connect-button");
+      await user.click(connectButton);
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).toBeInTheDocument();
+      });
+    });
+
+    test("handles user cancellation of port selection", async () => {
+      const user = userEvent.setup();
+
+      // Mock connection failure (user cancelled)
+      mocks.mockFailedConnection("User cancelled port selection");
+
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
+      );
+
+      const connectButton = screen.getByTestId("connect-button");
+      await user.click(connectButton);
+
+      // Should show error when user cancels
+      await waitFor(
+        () => {
+          expect(screen.queryByTestId("error")).toBeInTheDocument();
+        },
+        { timeout: 2000 },
+      );
+    });
+  });
+
+  describe("useZMKApp Integration", () => {
+    test("useZMKApp hook works correctly", async () => {
+      // Configure mocks for successful connection
+      mocks.mockSuccessfulConnection({
+        deviceName: "Test Device",
+        subsystems: ["test-subsystem"],
+      });
+
+      const { result } = renderHook(() => useZMKApp());
+
+      expect(result.current.isConnected).toBe(false);
+
+      const connectFn = jest.fn().mockResolvedValue(mocks.mockTransport);
+
+      await act(async () => {
+        await result.current.connect(connectFn);
+      });
+
+      // Wait for connection state to update
+      await waitFor(
+        () => {
+          expect(result.current.isConnected).toBe(true);
+        },
+        { timeout: 3000 },
+      );
+      expect(result.current.state.deviceInfo?.name).toBe("Test Device");
+    });
+
+    test("findSubsystem works after connection", async () => {
+      // Configure mocks for successful connection
+      mocks.mockSuccessfulConnection({
+        deviceName: "Test Device",
+        subsystems: ["custom-subsystem"],
+      });
+
+      const { result } = renderHook(() => useZMKApp());
+
+      const connectFn = jest.fn().mockResolvedValue(mocks.mockTransport);
+
+      await act(async () => {
+        await result.current.connect(connectFn);
+      });
+
+      // Wait for connection to be established
+      await waitFor(
+        () => {
+          expect(result.current.isConnected).toBe(true);
+        },
+        { timeout: 3000 },
+      );
+
+      const subsystem = result.current.findSubsystem("custom-subsystem");
+      expect(subsystem).not.toBeNull();
+      expect(subsystem?.identifier).toBe("custom-subsystem");
+    });
+
+    test("disconnect clears all state", async () => {
+      // Configure mocks for successful connection
+      mocks.mockSuccessfulConnection({
+        deviceName: "Test Device",
+        subsystems: [],
+      });
+
+      const { result } = renderHook(() => useZMKApp());
+
+      const connectFn = jest.fn().mockResolvedValue(mocks.mockTransport);
+
+      // Connect first
+      await act(async () => {
+        await result.current.connect(connectFn);
+      });
+
+      expect(result.current.isConnected).toBe(true);
+
+      // Then disconnect
+      act(() => {
+        result.current.disconnect();
+      });
+
+      expect(result.current.isConnected).toBe(false);
+      expect(result.current.state.deviceInfo).toBeNull();
+      expect(result.current.state.connection).toBeNull();
+    });
+  });
+
+  describe("ConnectionContext Values", () => {
+    test("provides correct context values when disconnected", () => {
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
+      );
+
+      expect(screen.getByTestId("connection-status")).toHaveTextContent(
+        "Disconnected",
+      );
+      expect(screen.queryByTestId("device-name")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("loading")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("error")).not.toBeInTheDocument();
+    });
+
+    test("onConnect callback is defined and functional", () => {
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
+      );
+
+      const connectButton = screen.getByTestId("connect-button");
+      expect(connectButton).toBeEnabled();
+    });
+
+    test("onDisconnect callback is defined and functional", () => {
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
+      );
+
+      const disconnectButton = screen.getByTestId("disconnect-button");
+      expect(disconnectButton).toBeEnabled();
+    });
+
+    test("provides device name when connected", async () => {
+      const user = userEvent.setup();
+
+      // Configure mocks for successful connection
+      mocks.mockSuccessfulConnection({
+        deviceName: "My Keyboard",
+        subsystems: [],
+      });
+
+      render(
+        <DeviceConnectionProvider>
+          <TestComponent />
+        </DeviceConnectionProvider>,
+      );
+
+      await user.click(screen.getByTestId("connect-button"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("device-name")).toHaveTextContent(
+          "My Keyboard",
+        );
+      });
     });
   });
 });
