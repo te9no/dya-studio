@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useContext } from "react";
+import { useState, useEffect, useCallback, useContext, useMemo } from "react";
 import { ZMKCustomSubsystem, ZMKAppContext } from "@cormoran/zmk-studio-react-hook";
 import {
   Request,
@@ -36,10 +36,18 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const subsystem = zmkApp?.findSubsystem(SUBSYSTEM_IDENTIFIER);
+  // Memoize subsystem to avoid unnecessary re-renders
+  const subsystem = useMemo(
+    () => zmkApp?.findSubsystem(SUBSYSTEM_IDENTIFIER),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [zmkApp?.state.customSubsystems]
+  );
+  
+  // Extract subsystem index as a stable primitive value for dependencies
+  const subsystemIndex = subsystem?.index;
 
   const loadProfiles = useCallback(async () => {
-    if (!zmkApp?.state.connection || !subsystem) {
+    if (!zmkApp?.state.connection || subsystemIndex === undefined) {
       setError("Not connected to device or subsystem not found");
       return;
     }
@@ -50,7 +58,7 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
     try {
       const service = new ZMKCustomSubsystem(
         zmkApp.state.connection,
-        subsystem.index
+        subsystemIndex
       );
 
       const request = Request.create({
@@ -86,11 +94,11 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [zmkApp?.state.connection, subsystem]);
+  }, [zmkApp?.state.connection, subsystemIndex]);
 
   const switchProfile = useCallback(
     async (index: number) => {
-      if (!zmkApp?.state.connection || !subsystem) return;
+      if (!zmkApp?.state.connection || subsystemIndex === undefined) return;
 
       setIsLoading(true);
       setError(null);
@@ -98,7 +106,7 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
       try {
         const service = new ZMKCustomSubsystem(
           zmkApp.state.connection,
-          subsystem.index
+          subsystemIndex
         );
 
         const request = Request.create({
@@ -127,12 +135,12 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystem, loadProfiles]
+    [zmkApp?.state.connection, subsystemIndex, loadProfiles]
   );
 
   const unpairProfile = useCallback(
     async (index: number) => {
-      if (!zmkApp?.state.connection || !subsystem) return;
+      if (!zmkApp?.state.connection || subsystemIndex === undefined) return;
 
       setIsLoading(true);
       setError(null);
@@ -140,7 +148,7 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
       try {
         const service = new ZMKCustomSubsystem(
           zmkApp.state.connection,
-          subsystem.index
+          subsystemIndex
         );
 
         const request = Request.create({
@@ -169,12 +177,12 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystem, loadProfiles]
+    [zmkApp?.state.connection, subsystemIndex, loadProfiles]
   );
 
   const setProfileName = useCallback(
     async (index: number, name: string) => {
-      if (!zmkApp?.state.connection || !subsystem) return;
+      if (!zmkApp?.state.connection || subsystemIndex === undefined) return;
 
       setIsLoading(true);
       setError(null);
@@ -182,7 +190,7 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
       try {
         const service = new ZMKCustomSubsystem(
           zmkApp.state.connection,
-          subsystem.index
+          subsystemIndex
         );
 
         const request = Request.create({
@@ -211,15 +219,15 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystem, loadProfiles]
+    [zmkApp?.state.connection, subsystemIndex, loadProfiles]
   );
 
   // Load profiles when connection or subsystem changes
   useEffect(() => {
-    if (subsystem && zmkApp?.state.connection) {
+    if (subsystemIndex !== undefined && zmkApp?.state.connection) {
       loadProfiles();
     }
-  }, [subsystem, zmkApp?.state.connection, loadProfiles]);
+  }, [subsystemIndex, zmkApp?.state.connection, loadProfiles]);
 
   return {
     profiles,
