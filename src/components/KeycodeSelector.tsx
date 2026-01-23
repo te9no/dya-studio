@@ -95,23 +95,34 @@ export function KeycodeSelector({
     behaviors.forEach((behavior, id) => {
       const name = behavior.displayName.toLowerCase();
 
-      // Categorize behaviors
+      // Categorize behaviors based on exact or prefix match
       let category: BehaviorCategory = "special";
 
-      if (name.includes("key") || name === "kp") {
+      // Key press behaviors
+      if (name === "kp" || name === "key_press" || name.startsWith("key")) {
         category = "keypress";
-      } else if (
-        name.includes("layer") ||
-        name.includes("mo") ||
-        name.includes("to") ||
-        name.includes("lt") ||
-        name.includes("tog")
+      }
+      // Layer behaviors - match exact names or prefixes
+      else if (
+        name === "mo" ||
+        name === "to" ||
+        name === "lt" ||
+        name === "tog" ||
+        name === "sl" ||
+        name === "momentary" ||
+        name === "toggle" ||
+        name === "layer_tap" ||
+        name.includes("layer")
       ) {
         category = "layer";
-      } else if (
+      }
+      // Modifier behaviors
+      else if (
+        name === "mt" ||
+        name === "sk" ||
+        name === "mod_tap" ||
+        name === "sticky_key" ||
         name.includes("mod") ||
-        name.includes("mt") ||
-        name.includes("sk") ||
         name.includes("sticky")
       ) {
         category = "mod";
@@ -200,15 +211,21 @@ export function KeycodeSelector({
           param1,
           param2: 0,
         });
+        onClose();
       } else {
-        // Fallback: just use the keycode directly
-        onSelect({
-          behaviorId: 0,
-          param1: keycode.code,
-          param2: 0,
-        });
+        // No kp behavior found - this shouldn't happen if behaviors are loaded
+        console.warn("Key press behavior not found. Available behaviors:", behaviorOptions.map(b => b.displayName));
+        // Try to use the first available behavior as fallback
+        if (behaviorOptions.length > 0) {
+          const firstBehavior = behaviorOptions[0];
+          onSelect({
+            behaviorId: firstBehavior.id,
+            param1: createHidUsage(HID_USAGE_PAGE_KEYBOARD, keycode.code),
+            param2: 0,
+          });
+          onClose();
+        }
       }
-      onClose();
     },
     [behaviorOptions, onSelect, onClose]
   );
@@ -287,7 +304,7 @@ export function KeycodeSelector({
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-3xl max-h-[85vh] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden">
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-3xl h-[85vh] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
             <Dialog.Title className="text-lg font-medium text-[var(--color-text)]">
@@ -329,6 +346,13 @@ export function KeycodeSelector({
 
           {/* Content */}
           <div className="flex-1 overflow-hidden flex flex-col">
+            {/* Warning if no behaviors loaded */}
+            {behaviors.size === 0 && (
+              <div className="p-4 bg-yellow-500/10 border-b border-yellow-500/30 text-sm text-yellow-600">
+                ⚠️ Behaviors not loaded from keyboard. Key selection may not work properly.
+              </div>
+            )}
+            
             {mode === "keycode" ? (
               <>
                 {/* Search */}

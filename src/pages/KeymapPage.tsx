@@ -127,7 +127,7 @@ export function KeymapPage() {
 
   return (
     <div className="p-6 h-full overflow-auto">
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">

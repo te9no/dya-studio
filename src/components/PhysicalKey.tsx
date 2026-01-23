@@ -11,9 +11,9 @@ import type { KeyPhysicalAttrs, BehaviorBinding } from "../hooks/useKeymap";
 
 // Scale factor for converting ZMK units (1/100 mm) to pixels
 // ZMK uses 1/100 of a "unit" (usually 19.05mm key spacing)
-// We'll use a reasonable scale for display
-const SCALE = 0.5; // Adjust as needed for display
-const PIXELS_PER_UNIT = 48; // Pixels per key unit
+// Use a larger scale for better visibility
+const SCALE = 1.0; // Adjust as needed for display
+const PIXELS_PER_UNIT = 54; // Pixels per key unit (for 1U key)
 
 interface PhysicalKeyProps {
   /** Physical attributes of the key (position, size, rotation) */
@@ -82,7 +82,7 @@ export function PhysicalKey({
     <div
       className={`
         absolute rounded-lg border cursor-pointer transition-all duration-150
-        flex flex-col items-center justify-center p-1 overflow-hidden
+        flex flex-col items-center justify-center p-1.5 overflow-hidden
         ${
           isSelected
             ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] shadow-[0_0_10px_rgba(0,212,255,0.3)]"
@@ -99,26 +99,27 @@ export function PhysicalKey({
       {/* Display Name */}
       <span
         className={`
-          text-[10px] font-medium text-center leading-tight break-all
+          text-xs font-medium text-center leading-tight break-words line-clamp-2
           ${
             isModified
               ? "text-[var(--color-neon)]"
-              : "text-[var(--color-text-muted)]"
+              : "text-[var(--color-text)]"
           }
         `}
+        title={displayName}
       >
         {displayName || "—"}
       </span>
 
       {/* Modified indicator */}
       {isModified && (
-        <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-[var(--color-neon)]" />
+        <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[var(--color-neon)]" />
       )}
 
       {/* Reset button on hover when modified */}
       {isModified && isHovered && (
         <button
-          className="absolute bottom-0.5 right-0.5 p-0.5 rounded bg-[var(--color-surface)]/80 hover:bg-[var(--color-surface)] border border-[var(--color-border)]"
+          className="absolute bottom-1 right-1 p-0.5 rounded bg-[var(--color-surface)]/80 hover:bg-[var(--color-surface)] border border-[var(--color-border)]"
           onClick={(e) => {
             e.stopPropagation();
             onReset();
@@ -126,7 +127,7 @@ export function PhysicalKey({
           title="Reset to original"
         >
           <IconRotateClockwise
-            size={10}
+            size={12}
             className="text-[var(--color-text-muted)]"
           />
         </button>

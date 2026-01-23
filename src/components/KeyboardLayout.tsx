@@ -21,8 +21,9 @@ import {
 } from "../lib/keycodes";
 
 // Scale factor for converting ZMK units to pixels
-const SCALE = 0.5;
-const UNIT_SIZE = 48; // pixels per unit
+// Use a larger scale for better visibility
+const SCALE = 1.0;
+const UNIT_SIZE = 54; // pixels per unit (for 1U key)
 
 interface KeyboardLayoutProps {
   /** Physical layout configuration */
@@ -104,36 +105,46 @@ function getBindingDisplayName(
   ) {
     const layerNum = binding.param1;
     if (layers && layers[layerNum]) {
-      return `MO(${layers[layerNum].name || layerNum})`;
+      return `MO ${layers[layerNum].name || layerNum}`;
     }
-    return `MO(${layerNum})`;
+    return `MO ${layerNum}`;
   }
 
   if (behaviorName === "to") {
     const layerNum = binding.param1;
-    return `TO(${layerNum})`;
+    if (layers && layers[layerNum]) {
+      return `TO ${layers[layerNum].name || layerNum}`;
+    }
+    return `TO ${layerNum}`;
   }
 
   if (behaviorName === "tog" || behaviorName === "toggle") {
     const layerNum = binding.param1;
-    return `TG(${layerNum})`;
+    if (layers && layers[layerNum]) {
+      return `TG ${layers[layerNum].name || layerNum}`;
+    }
+    return `TG ${layerNum}`;
   }
 
   if (behaviorName === "lt" || behaviorName === "layer_tap") {
     const layerNum = binding.param1;
     const keycode = getKeycodeByCode(binding.param2);
     const keyName = keycode?.displayName || `0x${binding.param2.toString(16)}`;
-    return `LT${layerNum}(${keyName})`;
+    return `LT${layerNum} ${keyName}`;
   }
 
   // Handle mod-tap
   if (behaviorName === "mt" || behaviorName === "mod_tap") {
-    return "MT";
+    const keycode = getKeycodeByCode(binding.param2);
+    const keyName = keycode?.displayName || "";
+    return keyName ? `MT ${keyName}` : "MT";
   }
 
   // Handle sticky key
   if (behaviorName === "sk" || behaviorName === "sticky_key") {
-    return "SK";
+    const keycode = getKeycodeByCode(binding.param1);
+    const keyName = keycode?.displayName || "";
+    return keyName ? `SK ${keyName}` : "SK";
   }
 
   // Handle macro
@@ -151,18 +162,40 @@ function getBindingDisplayName(
     return "Reset";
   }
 
-  // Handle bluetooth
-  if (behaviorName.includes("bt")) {
-    return "BT";
+  // Handle bluetooth behaviors with parameters
+  if (behaviorName.includes("bt") || behaviorName === "bt") {
+    // Common BT parameter values
+    const btParams: Record<number, string> = {
+      0: "CLR",
+      1: "NXT",
+      2: "PRV",
+      3: "SEL 0",
+      4: "SEL 1",
+      5: "SEL 2",
+      6: "SEL 3",
+      7: "SEL 4",
+    };
+    const paramName = btParams[binding.param1] || `${binding.param1}`;
+    return `BT ${paramName}`;
   }
 
   // Handle output selection
-  if (behaviorName.includes("out")) {
-    return "Out";
+  if (behaviorName.includes("out") || behaviorName === "out") {
+    const outParams: Record<number, string> = {
+      0: "TOG",
+      1: "USB",
+      2: "BLE",
+    };
+    const paramName = outParams[binding.param1] || `${binding.param1}`;
+    return `OUT ${paramName}`;
   }
 
-  // Default: show behavior name
-  return behavior.displayName.substring(0, 4);
+  // Default: show behavior name with params if present
+  if (binding.param1 !== 0 || binding.param2 !== 0) {
+    return `${behavior.displayName} ${binding.param1}`;
+  }
+  
+  return behavior.displayName;
 }
 
 export function KeyboardLayout({
