@@ -1,0 +1,242 @@
+/**
+ * BehaviorDropdown Component
+ *
+ * Custom dropdown with quick-select buttons for common behaviors.
+ */
+import { useState, useMemo, useRef, useEffect } from "react";
+import { IconChevronDown } from "@tabler/icons-react";
+import {
+  getBehaviorMetadata,
+  type BehaviorCategory,
+  type ParamType,
+} from "../lib/behaviorMetadata";
+import type { BehaviorDefinition } from "../hooks/useKeymap";
+
+// Predefined behavior categories
+const BEHAVIOR_CATEGORIES: { id: BehaviorCategory; name: string }[] = [
+  { id: "keypress", name: "Key Press" },
+  { id: "layer", name: "Layers" },
+  { id: "mod", name: "Modifiers" },
+  { id: "mouse", name: "Mouse" },
+  { id: "bluetooth", name: "Bluetooth" },
+  { id: "output", name: "Output" },
+  { id: "system", name: "System" },
+  { id: "miscellaneous", name: "Misc" },
+  { id: "others", name: "Others" },
+];
+
+// Quick-select behaviors for faster access
+const QUICK_SELECT_BEHAVIORS = ["kp", "trans", "none"];
+
+interface BehaviorOption {
+  id: number;
+  name: string;
+  displayName: string;
+  category: BehaviorCategory;
+  description?: string;
+  needsParam1?: boolean;
+  needsParam2?: boolean;
+  param1Type?: ParamType;
+  param2Type?: ParamType;
+}
+
+interface BehaviorDropdownProps {
+  behaviors: Map<number, BehaviorDefinition>;
+  selectedBehaviorId: number | null;
+  onSelect: (behaviorId: number) => void;
+  onQuickSelect: (behaviorId: number) => void;
+}
+
+export function BehaviorDropdown({
+  behaviors,
+  selectedBehaviorId,
+  onSelect,
+  onQuickSelect,
+}: BehaviorDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<
+    BehaviorCategory | "all"
+  >("all");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  // Build behavior options
+  const behaviorOptions = useMemo((): BehaviorOption[] => {
+    const allOptions: BehaviorOption[] = [];
+    behaviors.forEach((behavior, id) => {
+      const metadata = getBehaviorMetadata(behavior.displayName);
+      const category = metadata?.category || "others";
+      allOptions.push({
+        id,
+        name: behavior.displayName,
+        displayName: behavior.displayName,
+        category,
+        description: metadata?.description,
+        needsParam1: !!metadata?.param1Type,
+        needsParam2: !!metadata?.param2Type,
+        param1Type: metadata?.param1Type,
+        param2Type: metadata?.param2Type,
+      });
+    });
+    return allOptions.sort((a, b) => {
+      const catA = BEHAVIOR_CATEGORIES.findIndex((c) => c.id === a.category);
+      const catB = BEHAVIOR_CATEGORIES.findIndex((c) => c.id === b.category);
+      if (catA !== catB) return catA - catB;
+      return a.displayName.localeCompare(b.displayName);
+    });
+  }, [behaviors]);
+
+  // Filtered options
+  const filteredOptions = useMemo(() => {
+    if (filterCategory === "all") return behaviorOptions;
+    return behaviorOptions.filter((opt) => opt.category === filterCategory);
+  }, [behaviorOptions, filterCategory]);
+
+  // Quick select behaviors
+  const quickSelectBehaviors = useMemo(() => {
+    return QUICK_SELECT_BEHAVIORS.map((name) => {
+      const metadata = getBehaviorMetadata(name);
+      if (!metadata) return null;
+      const behavior = Array.from(behaviors.values()).find((b) =>
+        metadata.displayNameVariants.includes(b.displayName)
+      );
+      return behavior
+        ? { id: behavior.id, name, displayName: behavior.displayName }
+        : null;
+    }).filter(Boolean) as { id: number; name: string; displayName: string }[];
+  }, [behaviors]);
+
+  // Current selection display
+  const selectedBehavior =
+    selectedBehaviorId !== null ? behaviors.get(selectedBehaviorId) : null;
+  const selectedDisplay = selectedBehavior?.displayName || "Select Behavior";
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Main Row: Dropdown + Quick Select */}
+      <div className="flex items-center gap-2">
+        {/* Dropdown Trigger */}
+        <button
+          className="flex-1 flex items-center justify-between px-3 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-electric)]/50 transition-colors"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <span className="text-sm text-[var(--color-text)]">
+            {selectedDisplay}
+          </span>
+          <IconChevronDown
+            size={16}
+            className={`text-[var(--color-text-muted)] transition-transform ${isOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {/* Quick Select Buttons with label */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-[var(--color-text-muted)] mr-1">
+            Quick:
+          </span>
+          {quickSelectBehaviors.map((qb) => (
+            <button
+              key={qb.id}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                selectedBehaviorId === qb.id
+                  ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]"
+                  : "bg-[var(--color-border)] text-[var(--color-text-secondary)] border border-transparent hover:border-[var(--color-electric)]/50"
+              }`}
+              onClick={() => onQuickSelect(qb.id)}
+              title={
+                qb.name === "kp"
+                  ? "Key Press - Quick select"
+                  : qb.name === "trans"
+                    ? "Transparent - Quick select"
+                    : "None - Quick select"
+              }
+            >
+              {qb.name === "kp"
+                ? "Key"
+                : qb.name === "trans"
+                  ? "▽"
+                  : "✕"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Dropdown Panel */}
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl z-10 max-h-80 overflow-hidden flex">
+          {/* Category Filter */}
+          <div className="w-28 border-r border-[var(--color-border)] overflow-y-auto py-1">
+            <button
+              className={`w-full px-2 py-1.5 text-left text-xs transition-colors ${
+                filterCategory === "all"
+                  ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]"
+                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+              }`}
+              onClick={() => setFilterCategory("all")}
+            >
+              All
+            </button>
+            {BEHAVIOR_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                className={`w-full px-2 py-1.5 text-left text-xs transition-colors ${
+                  filterCategory === cat.id
+                    ? "bg-[var(--color-electric)]/10 text-[var(--color-electric)]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+                }`}
+                onClick={() => setFilterCategory(cat.id)}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Behavior List */}
+          <div className="flex-1 overflow-y-auto py-1">
+            {filteredOptions.map((option) => (
+              <button
+                key={option.id}
+                className={`w-full px-3 py-2 text-left transition-colors ${
+                  selectedBehaviorId === option.id
+                    ? "bg-[var(--color-electric)]/10"
+                    : "hover:bg-[var(--color-border)]"
+                }`}
+                onClick={() => {
+                  onSelect(option.id);
+                  setIsOpen(false);
+                }}
+              >
+                <span className="block text-sm font-medium text-[var(--color-text)]">
+                  {option.displayName}
+                </span>
+                {option.description && (
+                  <span className="block text-xs text-[var(--color-text-muted)]">
+                    {option.description}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export { BEHAVIOR_CATEGORIES };
+export type { BehaviorOption };
