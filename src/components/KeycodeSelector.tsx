@@ -4,7 +4,7 @@
  * A modal dialog for selecting keycodes and configuring behaviors.
  * Provides categorized browsing and search functionality.
  */
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { IconSearch, IconX } from "@tabler/icons-react";
 import {
@@ -18,7 +18,6 @@ import {
 } from "../lib/keycodes";
 import {
   getBehaviorMetadata,
-  findBehaviorByCategory,
   getBehaviorParamOptions,
   type BehaviorCategory,
 } from "../lib/behaviorMetadata";
@@ -58,8 +57,13 @@ interface KeycodeSelectorProps {
 const BEHAVIOR_CATEGORIES: { id: BehaviorCategory; name: string }[] = [
   { id: "keypress", name: "Key Press" },
   { id: "layer", name: "Layers" },
-  { id: "mod", name: "Modifiers" },
   { id: "miscellaneous", name: "Miscellaneous" },
+  { id: "mod", name: "Modifiers" },
+  { id: "bluetooth", name: "Bluetooth" },
+  { id: "system", name: "System" },
+  { id: "output", name: "Output" },
+  { id: "mouse", name: "Mouse" },
+  { id: "others", name: "Others" },
 ];
 
 // Keycode categories in display order
@@ -104,7 +108,7 @@ export function KeycodeSelector({
     behaviors.forEach((behavior, id) => {
       // Get metadata from centralized registry
       const metadata = getBehaviorMetadata(behavior.displayName);
-      const category = metadata?.category || "miscellaneous";
+      const category = metadata?.category || "others";
 
       // Determine parameter types from behavior metadata
       let needsParam1 = false;
@@ -157,7 +161,16 @@ export function KeycodeSelector({
       });
     });
 
-    return options.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    return options.sort((a, b) => {
+      // Sort by category first (using BEHAVIOR_CATEGORIES order)
+      const catA = BEHAVIOR_CATEGORIES.findIndex((c) => c.id === a.category);
+      const catB = BEHAVIOR_CATEGORIES.findIndex((c) => c.id === b.category);
+      if (catA !== catB) {
+        return catA - catB;
+      }
+      // Then by displayName
+      return a.displayName.localeCompare(b.displayName);
+    });
   }, [behaviors]);
 
   // Get filtered keycodes
@@ -178,41 +191,29 @@ export function KeycodeSelector({
   const handleKeycodeSelect = useCallback(
     (keycode: KeycodeDefinition) => {
       // Find the key_press behavior
-      const kpBehavior = findBehaviorByCategory(behaviors, "keypress");
-
+      // Find the keypress behavior by matching displayName from metadata
+      const keypressMetadata = getBehaviorMetadata("kp");
+      if (!keypressMetadata) {
+        console.error("Key press behavior metadata not found.");
+        return;
+      }
+      const kpBehavior = Array.from(behaviors.values()).find((b) =>
+        keypressMetadata.displayNameVariants.includes(b.displayName),
+      );
       if (kpBehavior) {
-        // Check if keycode already has a usage page (upper 16 bits)
-        // Consumer keycodes are already full HID usage values
         const param1 =
           keycode.code > 0xffff
-            ? keycode.code // Already a full HID usage
-            : createHidUsage(HID_USAGE_PAGE_KEYBOARD, keycode.code); // Add keyboard page
-
+            ? keycode.code
+            : createHidUsage(HID_USAGE_PAGE_KEYBOARD, keycode.code);
         onSelect({
           behaviorId: kpBehavior.id,
           param1,
           param2: 0,
         });
         onClose();
-      } else if (behaviors.size > 0) {
-        // Fallback: No kp behavior found but we have other behaviors
-        // This shouldn't normally happen if behaviors are loaded correctly
-        const firstBehavior = behaviors.values().next().value;
-        if (firstBehavior) {
-          console.warn(
-            "Key press behavior not found. Using first available behavior:",
-            firstBehavior.displayName,
-          );
-          onSelect({
-            behaviorId: firstBehavior.id,
-            param1: createHidUsage(HID_USAGE_PAGE_KEYBOARD, keycode.code),
-            param2: 0,
-          });
-          onClose();
-        }
       } else {
-        // No behaviors available at all - don't close, let user see the warning
-        console.error("No behaviors available. Cannot select keycode.");
+        // No keypress behavior found
+        console.error("Key press behavior not found in behaviors.");
       }
     },
     [behaviors, onSelect, onClose],
@@ -239,21 +240,23 @@ export function KeycodeSelector({
 
   // Handle transparent key selection
   const handleTransparent = useCallback(() => {
-    const transBehavior = findBehaviorByCategory(behaviors, "miscellaneous");
-
+    // Find the "transparent" behavior by displayName
+    const transMetadata = getBehaviorMetadata("trans");
+    if (!transMetadata) {
+      console.error("Transparent behavior metadata not found.");
+      return;
+    }
+    const transBehavior = Array.from(behaviors.values()).find((b) => {
+      return transMetadata.displayNameVariants.includes(b.displayName);
+    });
     if (transBehavior) {
-      const metadata = getBehaviorMetadata(transBehavior.displayName);
-      // Verify it's actually transparent (not just any miscellaneous behavior)
-      if (
-        metadata?.displayNameVariants.includes("trans") ||
-        metadata?.displayNameVariants.includes("transparent")
-      ) {
-        onSelect({
-          behaviorId: transBehavior.id,
-          param1: 0,
-          param2: 0,
-        });
-      }
+      onSelect({
+        behaviorId: transBehavior.id,
+        param1: 0,
+        param2: 0,
+      });
+    } else {
+      console.error("Transparent behavior not found in behaviors.");
     }
     onClose();
   }, [behaviors, onSelect, onClose]);
@@ -261,9 +264,13 @@ export function KeycodeSelector({
   // Handle none key selection
   const handleNone = useCallback(() => {
     // Find the specific "none" behavior among miscellaneous behaviors
+    const noneMetadata = getBehaviorMetadata("none");
+    if (!noneMetadata) {
+      console.error("None behavior metadata not found.");
+      return;
+    }
     const noneBehavior = Array.from(behaviors.values()).find((b) => {
-      const metadata = getBehaviorMetadata(b.displayName);
-      return metadata?.displayNameVariants.includes("none");
+      return noneMetadata.displayNameVariants.includes(b.displayName);
     });
 
     if (noneBehavior) {
@@ -272,6 +279,8 @@ export function KeycodeSelector({
         param1: 0,
         param2: 0,
       });
+    } else {
+      console.error("None behavior not found in behaviors.");
     }
     onClose();
   }, [behaviors, onSelect, onClose]);
@@ -279,6 +288,7 @@ export function KeycodeSelector({
   // Reset state when dialog opens and pre-select current binding
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
+      console.log("KeycodeSelector dialog open state changed:", isOpen);
       if (isOpen) {
         setSearchQuery("");
         setSelectedCategory("letters");
@@ -317,7 +327,13 @@ export function KeycodeSelector({
     },
     [onClose, currentBinding, behaviors],
   );
-
+  // Run handleOpenChange on mount if open is true
+  useEffect(() => {
+    if (open) {
+      handleOpenChange(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
@@ -534,6 +550,8 @@ export function KeycodeSelector({
                                 "bt_command" && " (BT Command)"}
                               {selectedBehaviorOption.param1Type ===
                                 "out_command" && " (Output)"}
+                              {selectedBehaviorOption.param1Type ===
+                                "mouse_keycode" && " (Mouse Keycode)"}
                             </label>
                             {selectedBehaviorOption.param1Type === "layer" ? (
                               <select
@@ -603,6 +621,8 @@ export function KeycodeSelector({
                                 "bt_command" && " (BT Command)"}
                               {selectedBehaviorOption.param2Type ===
                                 "out_command" && " (Output)"}
+                              {selectedBehaviorOption.param2Type ===
+                                "mouse_keycode" && " (Mouse Keycode)"}
                             </label>
                             {selectedBehaviorOption.param2Type === "layer" ? (
                               <select

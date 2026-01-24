@@ -27,7 +27,9 @@ export type BehaviorCategory =
   | "system" // Reset, bootloader
   | "output" // Output selection (USB/BLE)
   | "miscellaneous" // Trans, none, macro, etc
-  | "media"; // Media controls (if supported)
+  | "media" // Media controls (if supported)
+  | "mouse" // Mouse controls
+  | "others";
 
 /**
  * Parameter type definitions
@@ -37,7 +39,10 @@ export type ParamType =
   | "layer" // Layer ID
   | "number" // Generic number
   | "bt_command" // BT command (0=CLR, 1=NXT, etc)
-  | "out_command"; // Output command (0=TOG, 1=USB, 2=BLE)
+  | "out_command" // Output command (0=TOG, 1=USB, 2=BLE)
+  | "mouse_keycode" // Mouse keycode (LCK, RCLK, ...)
+  | "mouse_movement" // Mouse movement (X/Y deltas)
+  | "mouse_scroll"; // Mouse scroll (vertical/horizontal)
 
 /**
  * Parameter-dependent operation mapping
@@ -269,7 +274,71 @@ const BEHAVIOR_METADATA_BASE: Record<string, BehaviorMetadata> = {
   // TODO: keyrepeat?
   // TODO: support sensor and sensor rotation
   // TODO: support mouse behaviors
-
+  "Mouse Key Press": {
+    category: "mouse",
+    displayNameVariants: ["mkp", "mouse key press"],
+    shortCode: "MKP",
+    param1Type: "mouse_keycode",
+    getDisplayText: (binding) => {
+      switch (binding.param1) {
+        case 1:
+          return "LCLK";
+        case 2:
+          return "RCLK";
+        case 3:
+          return "MCLK";
+        case 4:
+          return "BTN4";
+        case 5:
+          return "BTN5";
+        default:
+          return `MKP ${binding.param1}`;
+      }
+    },
+    description: "Mouse key press",
+  },
+  "Mouse Move": {
+    category: "mouse",
+    displayNameVariants: ["mmv", "mouse move", "mouse_move"],
+    shortCode: "MMV",
+    param1Type: "mouse_movement",
+    getDisplayText: (binding) => {
+      switch (binding.param1) {
+        case 0:
+          return "Move Up";
+        case 1:
+          return "Move Down";
+        case 2:
+          return "Move Left";
+        case 3:
+          return "Move Right";
+        default:
+          return `MMV ${binding.param1}`;
+      }
+    },
+    description: "Move mouse cursor",
+  },
+  "Mouse Scroll": {
+    category: "mouse",
+    displayNameVariants: ["msc", "mouse scroll", "mouse_scroll"],
+    shortCode: "MSC",
+    param1Type: "mouse_scroll",
+    getDisplayText: (binding) => {
+      switch (binding.param1) {
+        case 0:
+          return "Scroll Up";
+        case 1:
+          return "Scroll Down";
+        case 2:
+          return "Scroll Left";
+        case 3:
+          return "Scroll Right";
+        default:
+          return `MSC ${binding.param1}`;
+      }
+    },
+    description: "Scroll mouse wheel",
+  },
   // ============================================================================
   // System Behaviors
   // ============================================================================
@@ -283,7 +352,7 @@ const BEHAVIOR_METADATA_BASE: Record<string, BehaviorMetadata> = {
 
   sys_reset: {
     category: "system",
-    displayNameVariants: ["sys_reset"],
+    displayNameVariants: ["sys_reset", "reset"],
     shortCode: "Reset",
     getDisplayText: () => "Reset",
     description: "System reset",
@@ -320,7 +389,7 @@ const BEHAVIOR_METADATA_BASE: Record<string, BehaviorMetadata> = {
   // ============================================================================
   out: {
     category: "output",
-    displayNameVariants: ["out", "output"],
+    displayNameVariants: ["out", "output", "output selection"],
     shortCode: "OUT",
     param1Type: "out_command",
     param1ValueMap: {
