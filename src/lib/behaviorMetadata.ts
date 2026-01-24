@@ -236,6 +236,21 @@ const BEHAVIOR_METADATA_BASE: Record<string, BehaviorMetadata> = {
     },
     description: "Modifier on hold, key on tap",
   },
+  // Leyer tap is defined above in Layer Behaviors
+  // Mod morph does not have pre-defined behavior
+
+  // ============================================================================
+  // Macro Behavior
+  // ============================================================================
+  macro: {
+    category: "miscellaneous",
+    displayNameVariants: ["macro"],
+    shortCode: "Macro",
+    getDisplayText: () => "Macro",
+    description: "Execute macro",
+  },
+
+  // TODO: key toggle
 
   "Sticky Key": {
     category: "mod",
@@ -247,6 +262,31 @@ const BEHAVIOR_METADATA_BASE: Record<string, BehaviorMetadata> = {
       return keycode ? `SK ${keycode.displayName}` : "SK";
     },
     description: "Sticky modifier key",
+  },
+  // TODO: Sticky Layer
+  // Tap Dance does not have pre-defined behavior
+  // TODO: caps word?
+  // TODO: keyrepeat?
+  // TODO: support sensor and sensor rotation
+  // TODO: support mouse behaviors
+
+  // ============================================================================
+  // System Behaviors
+  // ============================================================================
+  bootloader: {
+    category: "system",
+    displayNameVariants: ["bootloader"],
+    shortCode: "Boot",
+    getDisplayText: () => "Boot",
+    description: "Enter bootloader mode",
+  },
+
+  sys_reset: {
+    category: "system",
+    displayNameVariants: ["sys_reset"],
+    shortCode: "Reset",
+    getDisplayText: () => "Reset",
+    description: "System reset",
   },
 
   // ============================================================================
@@ -295,36 +335,11 @@ const BEHAVIOR_METADATA_BASE: Record<string, BehaviorMetadata> = {
     },
     description: "Output selection (USB/BLE)",
   },
-
-  // ============================================================================
-  // System Behaviors
-  // ============================================================================
-  bootloader: {
-    category: "system",
-    displayNameVariants: ["bootloader", "reset"],
-    shortCode: "Boot",
-    getDisplayText: () => "Boot",
-    description: "Enter bootloader mode",
-  },
-
-  sys_reset: {
-    category: "system",
-    displayNameVariants: ["sys_reset"],
-    shortCode: "Reset",
-    getDisplayText: () => "Reset",
-    description: "System reset",
-  },
-
-  // ============================================================================
-  // Macro Behavior
-  // ============================================================================
-  macro: {
-    category: "miscellaneous",
-    displayNameVariants: ["macro"],
-    shortCode: "Macro",
-    getDisplayText: () => "Macro",
-    description: "Execute macro",
-  },
+  // TODO: RGB Underglow
+  // TODO: Backlight
+  // TODO: Power management
+  // TODO: Softoff
+  // TODO: ZMK Studio unlock
 };
 
 /**
