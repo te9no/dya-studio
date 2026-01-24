@@ -1000,6 +1000,13 @@ export function extractModifierFlags(hidUsage: number): number {
 }
 
 /**
+ * Drop modifier flags from HID usage value.
+ */
+export function dropModifierFlags(hidUsage: number): number {
+  return hidUsage & 0x00ffffff;
+}
+
+/**
  * Extract base keycode from HID usage value (without modifiers)
  */
 export function extractBaseKeycode(hidUsage: number): number {
@@ -1007,7 +1014,7 @@ export function extractBaseKeycode(hidUsage: number): number {
   const code = getHidUsageCode(hidUsage);
   // If page is keyboard page, return just the code
   // Otherwise return the full usage (for consumer page, etc.)
-  return page === HID_USAGE_PAGE_KEYBOARD ? code : hidUsage;
+  return page === HID_USAGE_PAGE_KEYBOARD ? code : dropModifierFlags(hidUsage);
 }
 
 /**
@@ -1035,10 +1042,11 @@ export function formatKeycodeWithModifiers(hidUsage: number): {
 } {
   const modifiers = extractModifierFlags(hidUsage);
   const baseCode = extractBaseKeycode(hidUsage);
+  const hidUsageWithoutMods = dropModifierFlags(hidUsage);
 
   // Try to find the keycode definition
   // First check if it's a full HID usage (consumer page, etc.)
-  let keycode = getKeycodeByCode(hidUsage & 0x00ffffff); // Mask out modifiers
+  let keycode = getKeycodeByCode(hidUsageWithoutMods); // Mask out modifiers
   if (!keycode) {
     // Try keyboard page code
     keycode = getKeycodeByCode(baseCode);
@@ -1047,7 +1055,7 @@ export function formatKeycodeWithModifiers(hidUsage: number): {
   const baseName =
     keycode?.displayName || `0x${baseCode.toString(16).toUpperCase()}`;
   const fullName = keycode?.name || baseName;
-  const rawCodeHex = `0x${(hidUsage & 0x00ffffff).toString(16).toUpperCase()}`;
+  const rawCodeHex = `0x${hidUsageWithoutMods.toString(16).toUpperCase()}`;
 
   if (modifiers === 0) {
     return {

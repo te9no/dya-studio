@@ -19,6 +19,7 @@ import {
   MOUSE_KEYCODES,
   MOUSE_MOVEMENTS,
   MOUSE_SCROLLS,
+  dropModifierFlags,
 } from "./keycodes";
 
 /**
@@ -75,15 +76,17 @@ export interface FormatContext {
  */
 function formatKeycode(hidUsage: number): string {
   const modifiers = extractModifierFlags(hidUsage);
+  const hidUsageWithoutModifiers = dropModifierFlags(hidUsage);
   const page = getHidUsagePage(hidUsage);
-  const code = page === 0 ? hidUsage : getHidUsageCode(hidUsage);
+  const code =
+    page === 0 ? hidUsageWithoutModifiers : getHidUsageCode(hidUsage);
 
   // Try keyboard page first
   let keycode = getKeycodeByCode(code);
 
   // Try consumer page if not found
   if (!keycode && (page === HID_USAGE_PAGE_CONSUMER || page === 0)) {
-    keycode = getKeycodeByCode(hidUsage);
+    keycode = getKeycodeByCode(hidUsageWithoutModifiers);
   }
 
   const baseName =
