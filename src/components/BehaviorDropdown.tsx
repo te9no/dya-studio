@@ -59,6 +59,16 @@ export function BehaviorDropdown({
   >("all");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Recently selected behaviors (persisted in sessionStorage)
+  const [recentBehaviors, setRecentBehaviors] = useState<number[]>(() => {
+    try {
+      const saved = sessionStorage.getItem("recentBehaviors");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -107,19 +117,60 @@ export function BehaviorDropdown({
     return behaviorOptions.filter((opt) => opt.category === filterCategory);
   }, [behaviorOptions, filterCategory]);
 
-  // Quick select behaviors
+  // Update recent behaviors when selection changes
+  const updateRecentBehaviors = (behaviorId: number) => {
+    setRecentBehaviors((prev) => {
+      // Remove if already exists, then add to front
+      const filtered = prev.filter((id) => id !== behaviorId);
+      const updated = [behaviorId, ...filtered].slice(0, 2); // Keep only 2 most recent
+      try {
+        sessionStorage.setItem("recentBehaviors", JSON.stringify(updated));
+      } catch {
+        // Ignore storage errors
+      }
+      return updated;
+    });
+  };
+
+  // Quick select behaviors (predefined + recent)
   const quickSelectBehaviors = useMemo(() => {
-    return QUICK_SELECT_BEHAVIORS.map((name) => {
+    const predefined = QUICK_SELECT_BEHAVIORS.map((name) => {
       const metadata = getBehaviorMetadata(name);
       if (!metadata) return null;
       const behavior = Array.from(behaviors.values()).find((b) =>
         metadata.displayNameVariants.includes(b.displayName),
       );
       return behavior
-        ? { id: behavior.id, name, displayName: behavior.displayName }
+        ? {
+            id: behavior.id,
+            name,
+            displayName: behavior.displayName,
+            isRecent: false,
+          }
         : null;
-    }).filter(Boolean) as { id: number; name: string; displayName: string }[];
-  }, [behaviors]);
+    }).filter(Boolean) as {
+      id: number;
+      name: string;
+      displayName: string;
+      isRecent: boolean;
+    }[];
+
+    // Add recent behaviors that aren't already in predefined
+    const predefinedIds = new Set(predefined.map((b) => b.id));
+    const recent = recentBehaviors
+      .filter((id) => !predefinedIds.has(id) && behaviors.has(id))
+      .map((id) => {
+        const behavior = behaviors.get(id)!;
+        return {
+          id,
+          name: behavior.displayName,
+          displayName: behavior.displayName,
+          isRecent: true,
+        };
+      });
+
+    return [...predefined, ...recent];
+  }, [behaviors, recentBehaviors]);
 
   // Current selection display
   const selectedBehavior =
@@ -154,9 +205,15 @@ export function BehaviorDropdown({
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               selectedBehaviorId === qb.id
                 ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]"
-                : "bg-[var(--color-border)] text-[var(--color-text-secondary)] border border-transparent hover:border-[var(--color-electric)]/50"
+                : qb.isRecent
+                  ? "bg-[var(--color-neon)]/10 text-[var(--color-neon)] border border-[var(--color-neon)]/30 hover:border-[var(--color-neon)]"
+                  : "bg-[var(--color-border)] text-[var(--color-text-secondary)] border border-transparent hover:border-[var(--color-electric)]/50"
             }`}
-            onClick={() => onQuickSelect(qb.id)}
+            onClick={() => {
+              updateRecentBehaviors(qb.id);
+              onQuickSelect(qb.id);
+            }}
+            title={qb.isRecent ? "Recently used" : undefined}
           >
             {qb.displayName}
           </button>
@@ -204,6 +261,7 @@ export function BehaviorDropdown({
                     : "hover:bg-[var(--color-border)]"
                 }`}
                 onClick={() => {
+                  updateRecentBehaviors(option.id);
                   onSelect(option.id);
                   setIsOpen(false);
                 }}
