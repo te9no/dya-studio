@@ -26,7 +26,7 @@ export type BehaviorCategory =
   | "bluetooth" // BT profile management
   | "system" // Reset, bootloader
   | "output" // Output selection (USB/BLE)
-  | "special" // Trans, none, macro, etc
+  | "miscellaneous" // Trans, none, macro, etc
   | "media"; // Media controls (if supported)
 
 /**
@@ -202,6 +202,24 @@ const BEHAVIOR_METADATA_BASE: Record<string, BehaviorMetadata> = {
     },
     description: "Layer on hold, key on tap",
   },
+  // ============================================================================
+  // Miscellaneous Behaviors
+  // ============================================================================
+  trans: {
+    category: "miscellaneous",
+    displayNameVariants: ["trans", "transparent"],
+    shortCode: "▽",
+    getDisplayText: () => "▽",
+    description: "Transparent (pass-through to lower layer)",
+  },
+
+  none: {
+    category: "miscellaneous",
+    displayNameVariants: ["none"],
+    shortCode: "✕",
+    getDisplayText: () => "✕",
+    description: "No operation",
+  },
 
   // ============================================================================
   // Modifier Behaviors
@@ -279,25 +297,6 @@ const BEHAVIOR_METADATA_BASE: Record<string, BehaviorMetadata> = {
   },
 
   // ============================================================================
-  // Special Behaviors
-  // ============================================================================
-  trans: {
-    category: "special",
-    displayNameVariants: ["trans", "transparent"],
-    shortCode: "▽",
-    getDisplayText: () => "▽",
-    description: "Transparent (pass-through to lower layer)",
-  },
-
-  none: {
-    category: "special",
-    displayNameVariants: ["none"],
-    shortCode: "✕",
-    getDisplayText: () => "✕",
-    description: "No operation",
-  },
-
-  // ============================================================================
   // System Behaviors
   // ============================================================================
   bootloader: {
@@ -320,7 +319,7 @@ const BEHAVIOR_METADATA_BASE: Record<string, BehaviorMetadata> = {
   // Macro Behavior
   // ============================================================================
   macro: {
-    category: "special",
+    category: "miscellaneous",
     displayNameVariants: ["macro"],
     shortCode: "Macro",
     getDisplayText: () => "Macro",
@@ -445,7 +444,7 @@ export function groupBehaviorsByCategory(
 
   behaviors.forEach((behavior) => {
     const metadata = getBehaviorMetadata(behavior.displayName);
-    const category = metadata?.category || "special";
+    const category = metadata?.category || "miscellaneous";
 
     if (!grouped.has(category)) {
       grouped.set(category, []);

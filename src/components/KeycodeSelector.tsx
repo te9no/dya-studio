@@ -59,7 +59,7 @@ const BEHAVIOR_CATEGORIES: { id: BehaviorCategory; name: string }[] = [
   { id: "keypress", name: "Key Press" },
   { id: "layer", name: "Layers" },
   { id: "mod", name: "Modifiers" },
-  { id: "special", name: "Special" },
+  { id: "miscellaneous", name: "Miscellaneous" },
 ];
 
 // Keycode categories in display order
@@ -74,7 +74,7 @@ const KEYCODE_CATEGORY_ORDER: KeycodeCategory[] = [
   "media",
   "system",
   "international",
-  "special",
+  "miscellaneous",
 ];
 
 export function KeycodeSelector({
@@ -104,7 +104,7 @@ export function KeycodeSelector({
     behaviors.forEach((behavior, id) => {
       // Get metadata from centralized registry
       const metadata = getBehaviorMetadata(behavior.displayName);
-      const category = metadata?.category || "special";
+      const category = metadata?.category || "miscellaneous";
 
       // Determine parameter types from behavior metadata
       let needsParam1 = false;
@@ -239,11 +239,11 @@ export function KeycodeSelector({
 
   // Handle transparent key selection
   const handleTransparent = useCallback(() => {
-    const transBehavior = findBehaviorByCategory(behaviors, "special");
+    const transBehavior = findBehaviorByCategory(behaviors, "miscellaneous");
 
     if (transBehavior) {
       const metadata = getBehaviorMetadata(transBehavior.displayName);
-      // Verify it's actually transparent (not just any special behavior)
+      // Verify it's actually transparent (not just any miscellaneous behavior)
       if (
         metadata?.displayNameVariants.includes("trans") ||
         metadata?.displayNameVariants.includes("transparent")
@@ -260,7 +260,7 @@ export function KeycodeSelector({
 
   // Handle none key selection
   const handleNone = useCallback(() => {
-    // Find the specific "none" behavior among special behaviors
+    // Find the specific "none" behavior among miscellaneous behaviors
     const noneBehavior = Array.from(behaviors.values()).find((b) => {
       const metadata = getBehaviorMetadata(b.displayName);
       return metadata?.displayNameVariants.includes("none");

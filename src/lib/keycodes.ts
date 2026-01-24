@@ -41,7 +41,7 @@ export type KeycodeCategory =
   | "system"
   | "punctuation"
   | "international"
-  | "special";
+  | "miscellaneous";
 
 // Keycode definition interface
 export interface KeycodeDefinition {
@@ -57,7 +57,7 @@ export interface KeycodeDefinition {
   aliases?: string[];
   /** Description for tooltip */
   description?: string;
-  /** Icon name for special keys */
+  /** Icon name for miscellaneous keys */
   icon?: string;
 }
 
@@ -608,7 +608,7 @@ export const KEYBOARD_KEYCODES: KeycodeDefinition[] = [
     code: 0x65,
     displayName: "App",
     name: "Application",
-    category: "special",
+    category: "miscellaneous",
     aliases: ["K_APP", "Menu", "Context"],
   },
 
@@ -928,7 +928,7 @@ export function searchKeycodes(query: string): KeycodeDefinition[] {
  * Get keycodes by category
  */
 export function getKeycodesByCategory(
-  category: KeycodeCategory
+  category: KeycodeCategory,
 ): KeycodeDefinition[] {
   return ALL_KEYCODES.filter((kc) => kc.category === category);
 }
@@ -954,5 +954,5 @@ export const CATEGORY_DISPLAY_NAMES: Record<KeycodeCategory, string> = {
   system: "System",
   punctuation: "Punctuation",
   international: "International",
-  special: "Special",
+  miscellaneous: "Miscellaneous",
 };
