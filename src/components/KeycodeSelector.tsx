@@ -22,18 +22,32 @@ import {
 import {
   getBehaviorMetadata,
   getBehaviorParamOptions,
+  getBehaviorParamInfo,
   hasParam1,
   hasParam2,
   type ParamType,
 } from "../lib/behaviorMetadata";
 import type { BehaviorBinding, BehaviorDefinition } from "../hooks/useKeymap";
-import { BehaviorDropdown, type BehaviorOption } from "./BehaviorDropdown";
+import { BehaviorDropdown } from "./BehaviorDropdown";
 import { ButtonListSelector } from "./ButtonListSelector";
 import { KeycodeValueSelector } from "./KeycodeValueSelector";
+import { RangeValueSelector } from "./RangeValueSelector";
 
 // =============================================================================
 // Types
 // =============================================================================
+
+/**
+ * Selected behavior information for KeycodeSelector
+ * Contains all necessary information for parameter configuration
+ */
+interface SelectedBehaviorInfo {
+  behavior: BehaviorDefinition;
+  needsParam1: boolean;
+  needsParam2: boolean;
+  param1Type?: ParamType;
+  param2Type?: ParamType;
+}
 
 interface KeycodeSelectorProps {
   open: boolean;
@@ -107,8 +121,7 @@ function formatParamValue(
   paramType: ParamType | undefined,
   value: number,
   layers: Array<{ id: number; name: string }>,
-  behaviorOption: BehaviorOption | null,
-  behaviors: Map<number, BehaviorDefinition>,
+  behavior: BehaviorDefinition | null,
 ): string {
   if (value === NO_PARAM_VALUE && paramType !== "layer") {
     return "Not set";
@@ -125,10 +138,8 @@ function formatParamValue(
     }
     case "bt_command":
     case "out_command": {
-      const metadata = behaviorOption
-        ? getBehaviorMetadata(
-            behaviors.get(behaviorOption.id)?.displayName || "",
-          )
+      const metadata = behavior
+        ? getBehaviorMetadata(behavior.displayName)
         : null;
       const options = metadata ? getBehaviorParamOptions(metadata, 1) : null;
       const option = options?.find((o) => o.value === value);
@@ -195,11 +206,12 @@ export function KeycodeSelector({
     );
   }, [selectedBehavior, param1, param2]);
 
-  // Get selected behavior option
-  const selectedBehaviorOption = useMemo((): BehaviorOption | null => {
+  // Get selected behavior info
+  const selectedBehaviorInfo = useMemo((): SelectedBehaviorInfo | null => {
     if (selectedBehavior === null) return null;
     const behavior = behaviors.get(selectedBehavior);
     if (!behavior) return null;
+
     const metadata = getBehaviorMetadata(behavior.displayName);
     // Use metadata if available, otherwise fall back to BehaviorDefinition.metadata
     const needsParam1Value = metadata?.param1Type
@@ -208,12 +220,9 @@ export function KeycodeSelector({
     const needsParam2Value = metadata?.param2Type
       ? !!metadata.param2Type
       : hasParam2(behavior);
+
     return {
-      id: selectedBehavior,
-      name: behavior.displayName,
-      displayName: behavior.displayName,
-      category: metadata?.category || "others",
-      description: metadata?.description,
+      behavior,
       needsParam1: needsParam1Value,
       needsParam2: needsParam2Value,
       param1Type: metadata?.param1Type,
@@ -222,8 +231,8 @@ export function KeycodeSelector({
   }, [selectedBehavior, behaviors]);
 
   // Check if behavior needs parameters
-  const needsParam1 = selectedBehaviorOption?.needsParam1 ?? false;
-  const needsParam2 = selectedBehaviorOption?.needsParam2 ?? false;
+  const needsParam1 = selectedBehaviorInfo?.needsParam1 ?? false;
+  const needsParam2 = selectedBehaviorInfo?.needsParam2 ?? false;
   const needsAnyParam = needsParam1 || needsParam2;
 
   // Handle behavior selection from dropdown
@@ -409,139 +418,207 @@ export function KeycodeSelector({
 
   // Render parameter value selector based on type
   const renderParamValueSelector = useCallback(
-    (
-      paramType: ParamType | undefined,
-      value: number,
-      onChange: (v: number) => void,
-    ) => {
-      if (!paramType) return null;
+    (value: number, onChange: (v: number) => void, paramNumber: 1 | 2) => {
+      // Get paramType from selectedBehaviorInfo
+      const paramType = selectedBehaviorInfo
+        ? paramNumber === 1
+          ? selectedBehaviorInfo.param1Type
+          : selectedBehaviorInfo.param2Type
+        : undefined;
 
-      switch (paramType) {
-        case "keycode":
-          return (
-            <KeycodeValueSelector
-              value={value}
-              onChange={onChange}
-              showModifiers={true}
-            />
-          );
+      // If paramType is defined, use metadata-based rendering
+      if (paramType) {
+        switch (paramType) {
+          case "keycode":
+            return (
+              <KeycodeValueSelector
+                value={value}
+                onChange={onChange}
+                showModifiers={true}
+              />
+            );
 
-        case "layer":
-          return (
-            <ButtonListSelector
-              options={layers.map((l) => ({
-                value: l.id,
-                label: l.name || `Layer ${l.id}`,
-              }))}
-              value={value}
-              onChange={onChange}
-              columns={Math.min(layers.length, 4)}
-            />
-          );
+          case "layer":
+            return (
+              <ButtonListSelector
+                options={layers.map((l) => ({
+                  value: l.id,
+                  label: l.name || `Layer ${l.id}`,
+                }))}
+                value={value}
+                onChange={onChange}
+                columns={Math.min(layers.length, 4)}
+              />
+            );
 
-        case "bt_command": {
-          const metadata = selectedBehaviorOption
-            ? getBehaviorMetadata(
-                behaviors.get(selectedBehaviorOption.id)?.displayName || "",
-              )
-            : null;
-          const options = metadata
-            ? getBehaviorParamOptions(metadata, 1)
-            : null;
-          return (
-            <ButtonListSelector
-              options={
-                options?.map((opt) => ({
-                  value: opt.value,
-                  label: opt.label,
-                })) || []
-              }
-              value={value}
-              onChange={onChange}
-              columns={3}
-            />
-          );
+          case "bt_command": {
+            const metadata = selectedBehaviorInfo
+              ? getBehaviorMetadata(selectedBehaviorInfo.behavior.displayName)
+              : null;
+            const options = metadata
+              ? getBehaviorParamOptions(metadata, 1)
+              : null;
+            return (
+              <ButtonListSelector
+                options={
+                  options?.map((opt) => ({
+                    value: opt.value,
+                    label: opt.label,
+                  })) || []
+                }
+                value={value}
+                onChange={onChange}
+                columns={3}
+              />
+            );
+          }
+
+          case "out_command": {
+            const metadata = selectedBehaviorInfo
+              ? getBehaviorMetadata(selectedBehaviorInfo.behavior.displayName)
+              : null;
+            const options = metadata
+              ? getBehaviorParamOptions(metadata, 1)
+              : null;
+            return (
+              <ButtonListSelector
+                options={
+                  options?.map((opt) => ({
+                    value: opt.value,
+                    label: opt.label,
+                  })) || []
+                }
+                value={value}
+                onChange={onChange}
+                columns={3}
+              />
+            );
+          }
+
+          case "mouse_keycode":
+            return (
+              <ButtonListSelector
+                options={MOUSE_KEYCODES.map((mk) => ({
+                  value: mk.value,
+                  label: mk.label,
+                  shortLabel: mk.shortLabel,
+                }))}
+                value={value}
+                onChange={onChange}
+                columns={3}
+              />
+            );
+
+          case "mouse_movement":
+            return (
+              <ButtonListSelector
+                options={MOUSE_MOVEMENTS.map((mm) => ({
+                  value: mm.value,
+                  label: mm.label,
+                  shortLabel: mm.shortLabel,
+                }))}
+                value={value}
+                onChange={onChange}
+                columns={2}
+              />
+            );
+
+          case "mouse_scroll":
+            return (
+              <ButtonListSelector
+                options={MOUSE_SCROLLS.map((ms) => ({
+                  value: ms.value,
+                  label: ms.label,
+                  shortLabel: ms.shortLabel,
+                }))}
+                value={value}
+                onChange={onChange}
+                columns={2}
+              />
+            );
+
+          case "number":
+          default:
+            return (
+              <input
+                type="number"
+                value={value}
+                onChange={(e) => onChange(Number(e.target.value))}
+                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-electric)]/50"
+              />
+            );
         }
-
-        case "out_command": {
-          const metadata = selectedBehaviorOption
-            ? getBehaviorMetadata(
-                behaviors.get(selectedBehaviorOption.id)?.displayName || "",
-              )
-            : null;
-          const options = metadata
-            ? getBehaviorParamOptions(metadata, 1)
-            : null;
-          return (
-            <ButtonListSelector
-              options={
-                options?.map((opt) => ({
-                  value: opt.value,
-                  label: opt.label,
-                })) || []
-              }
-              value={value}
-              onChange={onChange}
-              columns={3}
-            />
-          );
-        }
-
-        case "mouse_keycode":
-          return (
-            <ButtonListSelector
-              options={MOUSE_KEYCODES.map((mk) => ({
-                value: mk.value,
-                label: mk.label,
-                shortLabel: mk.shortLabel,
-              }))}
-              value={value}
-              onChange={onChange}
-              columns={3}
-            />
-          );
-
-        case "mouse_movement":
-          return (
-            <ButtonListSelector
-              options={MOUSE_MOVEMENTS.map((mm) => ({
-                value: mm.value,
-                label: mm.label,
-                shortLabel: mm.shortLabel,
-              }))}
-              value={value}
-              onChange={onChange}
-              columns={2}
-            />
-          );
-
-        case "mouse_scroll":
-          return (
-            <ButtonListSelector
-              options={MOUSE_SCROLLS.map((ms) => ({
-                value: ms.value,
-                label: ms.label,
-                shortLabel: ms.shortLabel,
-              }))}
-              value={value}
-              onChange={onChange}
-              columns={2}
-            />
-          );
-
-        case "number":
-        default:
-          return (
-            <input
-              type="number"
-              value={value}
-              onChange={(e) => onChange(Number(e.target.value))}
-              className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-electric)]/50"
-            />
-          );
       }
+
+      // Fallback: use BehaviorDefinition metadata
+      if (selectedBehavior !== null) {
+        const behavior = behaviors.get(selectedBehavior);
+        if (behavior) {
+          const paramInfo = getBehaviorParamInfo(behavior, paramNumber);
+          if (paramInfo) {
+            switch (paramInfo.type) {
+              case "hidUsage":
+                return (
+                  <KeycodeValueSelector
+                    value={value}
+                    onChange={onChange}
+                    showModifiers={true}
+                  />
+                );
+
+              case "layerId":
+                return (
+                  <ButtonListSelector
+                    options={layers.map((l) => ({
+                      value: l.id,
+                      label: l.name || `Layer ${l.id}`,
+                    }))}
+                    value={value}
+                    onChange={onChange}
+                    columns={Math.min(layers.length, 4)}
+                  />
+                );
+
+              case "range":
+                return (
+                  <RangeValueSelector
+                    min={paramInfo.min}
+                    max={paramInfo.max}
+                    value={value}
+                    onChange={onChange}
+                  />
+                );
+
+              case "constant":
+                return (
+                  <div className="text-center p-8">
+                    <div className="text-4xl font-mono font-bold text-[var(--color-neon)] mb-2">
+                      {paramInfo.value}
+                    </div>
+                    <div className="text-sm text-[var(--color-text-muted)]">
+                      Constant value
+                    </div>
+                  </div>
+                );
+
+              case "nil":
+                return null;
+            }
+          }
+        }
+      }
+
+      // Final fallback: generic number input
+      return (
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-electric)]/50"
+        />
+      );
     },
-    [layers, selectedBehaviorOption, behaviors],
+    [layers, selectedBehaviorInfo, behaviors, selectedBehavior],
   );
 
   return (
@@ -604,7 +681,7 @@ export function KeycodeSelector({
           </div>
 
           {/* Parameter Selection - Horizontal Layout */}
-          {selectedBehaviorOption && needsAnyParam && (
+          {selectedBehaviorInfo && needsAnyParam && (
             <div className="flex-1 flex flex-col overflow-hidden min-h-0">
               {/* Parameters Label */}
               <div className="px-4 pt-4 pb-1">
@@ -626,7 +703,7 @@ export function KeycodeSelector({
                     <div className="font-medium text-xs">
                       param1
                       <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
-                        {getParamTypeLabel(selectedBehaviorOption.param1Type)}
+                        {getParamTypeLabel(selectedBehaviorInfo.param1Type)}
                       </span>
                     </div>
                     <div
@@ -635,11 +712,10 @@ export function KeycodeSelector({
                       }`}
                     >
                       {formatParamValue(
-                        selectedBehaviorOption.param1Type,
+                        selectedBehaviorInfo.param1Type,
                         param1,
                         layers,
-                        selectedBehaviorOption,
-                        behaviors,
+                        selectedBehaviorInfo.behavior,
                       )}
                     </div>
                   </button>
@@ -656,7 +732,7 @@ export function KeycodeSelector({
                     <div className="font-medium text-xs">
                       param2
                       <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
-                        {getParamTypeLabel(selectedBehaviorOption.param2Type)}
+                        {getParamTypeLabel(selectedBehaviorInfo.param2Type)}
                       </span>
                     </div>
                     <div
@@ -665,11 +741,10 @@ export function KeycodeSelector({
                       }`}
                     >
                       {formatParamValue(
-                        selectedBehaviorOption.param2Type,
+                        selectedBehaviorInfo.param2Type,
                         param2,
                         layers,
-                        selectedBehaviorOption,
-                        behaviors,
+                        selectedBehaviorInfo.behavior,
                       )}
                     </div>
                   </button>
@@ -680,43 +755,34 @@ export function KeycodeSelector({
               <div className="px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)]">
                 <p className="text-xs text-[var(--color-text-muted)]">
                   {activeParam === 1
-                    ? getParamTypeDescription(selectedBehaviorOption.param1Type)
-                    : getParamTypeDescription(
-                        selectedBehaviorOption.param2Type,
-                      )}
+                    ? getParamTypeDescription(selectedBehaviorInfo.param1Type)
+                    : getParamTypeDescription(selectedBehaviorInfo.param2Type)}
                 </p>
               </div>
 
               {/* Parameter Value Selector */}
               <div className="flex-1 p-4 overflow-hidden flex flex-col">
                 {activeParam === 1 && needsParam1
-                  ? renderParamValueSelector(
-                      selectedBehaviorOption.param1Type,
-                      param1,
-                      handleParam1Change,
-                    )
+                  ? renderParamValueSelector(param1, handleParam1Change, 1)
                   : activeParam === 2 && needsParam2
-                    ? renderParamValueSelector(
-                        selectedBehaviorOption.param2Type,
-                        param2,
-                        handleParam2Change,
-                      )
+                    ? renderParamValueSelector(param2, handleParam2Change, 2)
                     : null}
               </div>
             </div>
           )}
 
           {/* No Parameters Message */}
-          {selectedBehaviorOption && !needsAnyParam && (
+          {selectedBehaviorInfo && !needsAnyParam && (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center">
                 <div className="text-4xl mb-4">
-                  {selectedBehaviorOption.category === "miscellaneous"
+                  {selectedBehaviorInfo.behavior.displayName === "none" ||
+                  selectedBehaviorInfo.behavior.displayName === "trans"
                     ? "✓"
                     : "⚡"}
                 </div>
                 <p className="text-[var(--color-text-secondary)]">
-                  {selectedBehaviorOption.displayName}
+                  {selectedBehaviorInfo.behavior.displayName}
                 </p>
                 <p className="text-sm text-[var(--color-text-muted)] mt-1">
                   No parameters needed

@@ -567,3 +567,62 @@ export function groupBehaviorsByCategory(
 
   return grouped;
 }
+
+/**
+ * Parameter type from BehaviorDefinition metadata
+ */
+export type BehaviorParameterInfo =
+  | { type: "nil" }
+  | { type: "constant"; value: number }
+  | { type: "range"; min: number; max: number }
+  | { type: "hidUsage"; keyboardMax: number; consumerMax: number }
+  | { type: "layerId" };
+
+/**
+ * Get parameter information from BehaviorDefinition
+ * Returns the parameter type and constraints for a specific parameter
+ */
+export function getBehaviorParamInfo(
+  behavior: BehaviorDefinition,
+  paramNumber: 1 | 2,
+): BehaviorParameterInfo | null {
+  if (behavior.metadata.length === 0) {
+    return null;
+  }
+
+  const paramSet = behavior.metadata[0];
+  const params = paramNumber === 1 ? paramSet.param1 : paramSet.param2;
+
+  if (!params || params.length === 0) {
+    return null;
+  }
+
+  // Use the first parameter description
+  const param = params[0];
+
+  if (param.nil) {
+    return { type: "nil" };
+  }
+  if (param.constant !== undefined) {
+    return { type: "constant", value: param.constant };
+  }
+  if (param.range) {
+    return {
+      type: "range",
+      min: param.range.min,
+      max: param.range.max,
+    };
+  }
+  if (param.hidUsage) {
+    return {
+      type: "hidUsage",
+      keyboardMax: param.hidUsage.keyboardMax,
+      consumerMax: param.hidUsage.consumerMax,
+    };
+  }
+  if (param.layerId !== undefined) {
+    return { type: "layerId" };
+  }
+
+  return null;
+}

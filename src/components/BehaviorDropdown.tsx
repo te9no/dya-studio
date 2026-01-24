@@ -7,10 +7,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { IconChevronDown } from "@tabler/icons-react";
 import {
   getBehaviorMetadata,
-  hasParam1,
-  hasParam2,
   type BehaviorCategory,
-  type ParamType,
 } from "../lib/behaviorMetadata";
 import type { BehaviorDefinition } from "../hooks/useKeymap";
 
@@ -36,10 +33,6 @@ interface BehaviorOption {
   displayName: string;
   category: BehaviorCategory;
   description?: string;
-  needsParam1?: boolean;
-  needsParam2?: boolean;
-  param1Type?: ParamType;
-  param2Type?: ParamType;
 }
 
 interface BehaviorDropdownProps {
@@ -93,23 +86,12 @@ export function BehaviorDropdown({
     behaviors.forEach((behavior, id) => {
       const metadata = getBehaviorMetadata(behavior.displayName);
       const category = metadata?.category || "others";
-      // Use metadata if available, otherwise fall back to BehaviorDefinition.metadata
-      const needsParam1 = metadata?.param1Type
-        ? !!metadata.param1Type
-        : hasParam1(behavior);
-      const needsParam2 = metadata?.param2Type
-        ? !!metadata.param2Type
-        : hasParam2(behavior);
       allOptions.push({
         id,
         name: behavior.displayName,
         displayName: behavior.displayName,
         category,
         description: metadata?.description,
-        needsParam1,
-        needsParam2,
-        param1Type: metadata?.param1Type,
-        param2Type: metadata?.param2Type,
       });
     });
     return allOptions.sort((a, b) => {
