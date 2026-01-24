@@ -4,6 +4,10 @@
  * A modal dialog for selecting behaviors and configuring parameters.
  * Behavior-first approach: select behavior, then configure parameters.
  * Supports various parameter types with dedicated UI selectors.
+ *
+ * Features:
+ * - Close on select: Automatically close the dialog after selecting the last parameter
+ *   (setting is persisted in localStorage)
  */
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -163,6 +167,10 @@ export function KeycodeSelector({
   const [param1, setParam1] = useState<number>(0);
   const [param2, setParam2] = useState<number>(0);
   const [activeParam, setActiveParam] = useState<1 | 2>(1);
+  const [closeOnSelect, setCloseOnSelect] = useState<boolean>(() => {
+    const saved = localStorage.getItem("keycodeSelectorCloseOnSelect");
+    return saved !== null ? saved === "true" : false;
+  });
 
   // Initial values to detect changes
   const initialValuesRef = useRef<{
@@ -170,6 +178,11 @@ export function KeycodeSelector({
     param1: number;
     param2: number;
   }>({ behaviorId: null, param1: 0, param2: 0 });
+
+  // Save closeOnSelect setting to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("keycodeSelectorCloseOnSelect", String(closeOnSelect));
+  }, [closeOnSelect]);
 
   // Check if values have changed
   const hasChanges = useMemo(() => {
@@ -245,15 +258,35 @@ export function KeycodeSelector({
       // Auto-advance to param2 if needed
       if (needsParam2) {
         setActiveParam(2);
+      } else if (closeOnSelect && selectedBehavior !== null) {
+        // If param1 is the last param and closeOnSelect is enabled, apply and close
+        onSelect({
+          behaviorId: selectedBehavior,
+          param1: value,
+          param2,
+        });
+        onClose();
       }
     },
-    [needsParam2],
+    [needsParam2, closeOnSelect, selectedBehavior, param2, onSelect, onClose],
   );
 
   // Handle param2 change
-  const handleParam2Change = useCallback((value: number) => {
-    setParam2(value);
-  }, []);
+  const handleParam2Change = useCallback(
+    (value: number) => {
+      setParam2(value);
+      // If param2 is set and closeOnSelect is enabled, apply and close
+      if (closeOnSelect && selectedBehavior !== null) {
+        onSelect({
+          behaviorId: selectedBehavior,
+          param1,
+          param2: value,
+        });
+        onClose();
+      }
+    },
+    [closeOnSelect, selectedBehavior, param1, onSelect, onClose],
+  );
 
   // Handle revert button click
   const handleRevert = useCallback(() => {
@@ -484,6 +517,15 @@ export function KeycodeSelector({
               Select Key Binding
             </Dialog.Title>
             <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
+                <input
+                  type="checkbox"
+                  checked={closeOnSelect}
+                  onChange={(e) => setCloseOnSelect(e.target.checked)}
+                  className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-electric)] focus:ring-2 focus:ring-[var(--color-electric)]/50 cursor-pointer"
+                />
+                <span>Close on select</span>
+              </label>
               {hasChanges && (
                 <button
                   className="px-4 py-2 text-sm rounded-lg border border-red-400 text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
