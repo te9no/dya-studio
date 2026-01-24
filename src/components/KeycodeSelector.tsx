@@ -16,11 +16,16 @@ import {
   HID_USAGE_PAGE_KEYBOARD,
   createHidUsage,
 } from "../lib/keycodes";
+import {
+  getBehaviorMetadata,
+  findBehaviorByCategory,
+  getBehaviorParamOptions,
+  type BehaviorCategory,
+} from "../lib/behaviorMetadata";
 import type { BehaviorBinding } from "../hooks/useKeymap";
 import type { BehaviorDefinition } from "../hooks/useKeymap";
 
-// Behavior categories for organization
-type BehaviorCategory = "keypress" | "layer" | "mod" | "special";
+import type { ParamType } from "../lib/behaviorMetadata";
 
 interface BehaviorOption {
   id: number;
@@ -30,8 +35,8 @@ interface BehaviorOption {
   description?: string;
   needsParam1?: boolean;
   needsParam2?: boolean;
-  param1Type?: "keycode" | "layer" | "number";
-  param2Type?: "keycode" | "layer" | "number";
+  param1Type?: ParamType;
+  param2Type?: ParamType;
 }
 
 interface KeycodeSelectorProps {
@@ -88,7 +93,7 @@ export function KeycodeSelector({
   const [param1, setParam1] = useState<number>(0);
   const [param2, setParam2] = useState<number>(0);
   const [mode, setMode] = useState<"keycode" | "behavior">("keycode");
-  
+
   // Ref for auto-focus on search input
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -97,55 +102,24 @@ export function KeycodeSelector({
     const options: BehaviorOption[] = [];
 
     behaviors.forEach((behavior, id) => {
-      const name = behavior.displayName.toLowerCase();
+      // Get metadata from centralized registry
+      const metadata = getBehaviorMetadata(behavior.displayName);
+      const category = metadata?.category || "special";
 
-      // Categorize behaviors based on exact or prefix match
-      // ZMK uses display names like "Key Press", "Momentary Layer", "To Layer", etc.
-      let category: BehaviorCategory = "special";
-
-      // Key press behaviors
-      if (name === "key press" || name === "kp" || name === "key_press" || name.startsWith("key")) {
-        category = "keypress";
-      }
-      // Layer behaviors - match exact names or prefixes
-      else if (
-        name === "momentary layer" ||
-        name === "to layer" ||
-        name === "toggle layer" ||
-        name === "layer-tap" ||
-        name === "mo" ||
-        name === "to" ||
-        name === "lt" ||
-        name === "tog" ||
-        name === "sl" ||
-        name === "momentary" ||
-        name === "toggle" ||
-        name === "layer_tap" ||
-        name.includes("layer")
-      ) {
-        category = "layer";
-      }
-      // Modifier behaviors
-      else if (
-        name === "mod-tap" ||
-        name === "sticky key" ||
-        name === "mt" ||
-        name === "sk" ||
-        name === "mod_tap" ||
-        name === "sticky_key" ||
-        name.includes("mod") ||
-        name.includes("sticky")
-      ) {
-        category = "mod";
-      }
-
-      // Determine parameter types
+      // Determine parameter types from behavior metadata
       let needsParam1 = false;
       let needsParam2 = false;
       let param1Type: BehaviorOption["param1Type"];
       let param2Type: BehaviorOption["param2Type"];
 
-      if (behavior.metadata.length > 0) {
+      // Use metadata if available
+      if (metadata) {
+        param1Type = metadata.param1Type;
+        param2Type = metadata.param2Type;
+        needsParam1 = !!metadata.param1Type;
+        needsParam2 = !!metadata.param2Type;
+      } else if (behavior.metadata.length > 0) {
+        // Fallback: infer from BehaviorDefinition metadata
         const meta = behavior.metadata[0];
         if (meta.param1?.length > 0) {
           needsParam1 = true;
@@ -204,44 +178,44 @@ export function KeycodeSelector({
   const handleKeycodeSelect = useCallback(
     (keycode: KeycodeDefinition) => {
       // Find the key_press behavior
-      // ZMK's behavior display name is "Key Press"
-      const kpBehavior = behaviorOptions.find(
-        (b) =>
-          b.displayName.toLowerCase() === "key press" ||
-          b.displayName.toLowerCase() === "kp" ||
-          b.displayName.toLowerCase() === "key_press"
-      );
+      const kpBehavior = findBehaviorByCategory(behaviors, "keypress");
 
       if (kpBehavior) {
         // Check if keycode already has a usage page (upper 16 bits)
         // Consumer keycodes are already full HID usage values
-        const param1 = keycode.code > 0xffff
-          ? keycode.code  // Already a full HID usage
-          : createHidUsage(HID_USAGE_PAGE_KEYBOARD, keycode.code);  // Add keyboard page
-        
+        const param1 =
+          keycode.code > 0xffff
+            ? keycode.code // Already a full HID usage
+            : createHidUsage(HID_USAGE_PAGE_KEYBOARD, keycode.code); // Add keyboard page
+
         onSelect({
           behaviorId: kpBehavior.id,
           param1,
           param2: 0,
         });
         onClose();
-      } else if (behaviorOptions.length > 0) {
+      } else if (behaviors.size > 0) {
         // Fallback: No kp behavior found but we have other behaviors
         // This shouldn't normally happen if behaviors are loaded correctly
-        console.warn("Key press behavior not found. Using first available behavior:", behaviorOptions[0].displayName);
-        const firstBehavior = behaviorOptions[0];
-        onSelect({
-          behaviorId: firstBehavior.id,
-          param1: createHidUsage(HID_USAGE_PAGE_KEYBOARD, keycode.code),
-          param2: 0,
-        });
-        onClose();
+        const firstBehavior = behaviors.values().next().value;
+        if (firstBehavior) {
+          console.warn(
+            "Key press behavior not found. Using first available behavior:",
+            firstBehavior.displayName,
+          );
+          onSelect({
+            behaviorId: firstBehavior.id,
+            param1: createHidUsage(HID_USAGE_PAGE_KEYBOARD, keycode.code),
+            param2: 0,
+          });
+          onClose();
+        }
       } else {
         // No behaviors available at all - don't close, let user see the warning
         console.error("No behaviors available. Cannot select keycode.");
       }
     },
-    [behaviorOptions, onSelect, onClose]
+    [behaviors, onSelect, onClose],
   );
 
   // Handle behavior selection
@@ -265,27 +239,32 @@ export function KeycodeSelector({
 
   // Handle transparent key selection
   const handleTransparent = useCallback(() => {
-    const transBehavior = behaviorOptions.find(
-      (b) =>
-        b.displayName.toLowerCase() === "trans" ||
-        b.displayName.toLowerCase() === "transparent"
-    );
+    const transBehavior = findBehaviorByCategory(behaviors, "special");
 
     if (transBehavior) {
-      onSelect({
-        behaviorId: transBehavior.id,
-        param1: 0,
-        param2: 0,
-      });
+      const metadata = getBehaviorMetadata(transBehavior.displayName);
+      // Verify it's actually transparent (not just any special behavior)
+      if (
+        metadata?.displayNameVariants.includes("trans") ||
+        metadata?.displayNameVariants.includes("transparent")
+      ) {
+        onSelect({
+          behaviorId: transBehavior.id,
+          param1: 0,
+          param2: 0,
+        });
+      }
     }
     onClose();
-  }, [behaviorOptions, onSelect, onClose]);
+  }, [behaviors, onSelect, onClose]);
 
   // Handle none key selection
   const handleNone = useCallback(() => {
-    const noneBehavior = behaviorOptions.find(
-      (b) => b.displayName.toLowerCase() === "none"
-    );
+    // Find the specific "none" behavior among special behaviors
+    const noneBehavior = Array.from(behaviors.values()).find((b) => {
+      const metadata = getBehaviorMetadata(b.displayName);
+      return metadata?.displayNameVariants.includes("none");
+    });
 
     if (noneBehavior) {
       onSelect({
@@ -295,7 +274,7 @@ export function KeycodeSelector({
       });
     }
     onClose();
-  }, [behaviorOptions, onSelect, onClose]);
+  }, [behaviors, onSelect, onClose]);
 
   // Reset state when dialog opens and pre-select current binding
   const handleOpenChange = useCallback(
@@ -303,19 +282,19 @@ export function KeycodeSelector({
       if (isOpen) {
         setSearchQuery("");
         setSelectedCategory("letters");
-        
+
         // Pre-select current binding if available
         if (currentBinding) {
           setSelectedBehavior(currentBinding.behaviorId);
           setParam1(currentBinding.param1);
           setParam2(currentBinding.param2);
-          
+
           // Determine if we should start in behavior mode
           const behavior = behaviors.get(currentBinding.behaviorId);
           if (behavior) {
-            const name = behavior.displayName.toLowerCase();
+            const metadata = getBehaviorMetadata(behavior.displayName);
             // If not a simple keypress, start in behavior mode
-            if (name !== "key press" && name !== "kp" && name !== "key_press") {
+            if (metadata?.category !== "keypress") {
               setMode("behavior");
             } else {
               setMode("keycode");
@@ -327,7 +306,7 @@ export function KeycodeSelector({
           setParam2(0);
           setMode("keycode");
         }
-        
+
         // Auto-focus search input after a short delay
         setTimeout(() => {
           searchInputRef.current?.focus();
@@ -336,7 +315,7 @@ export function KeycodeSelector({
         onClose();
       }
     },
-    [onClose, currentBinding, behaviors]
+    [onClose, currentBinding, behaviors],
   );
 
   return (
@@ -388,10 +367,11 @@ export function KeycodeSelector({
             {/* Warning if no behaviors loaded */}
             {behaviors.size === 0 && (
               <div className="p-4 bg-yellow-500/10 border-b border-yellow-500/30 text-sm text-yellow-600">
-                ⚠️ Behaviors not loaded from keyboard. Key selection may not work properly.
+                ⚠️ Behaviors not loaded from keyboard. Key selection may not
+                work properly.
               </div>
             )}
-            
+
             {mode === "keycode" ? (
               <>
                 {/* Search */}
@@ -495,7 +475,7 @@ export function KeycodeSelector({
                       }`}
                       onClick={() => {
                         const firstInCategory = behaviorOptions.find(
-                          (b) => b.category === category.id
+                          (b) => b.category === category.id,
                         );
                         if (firstInCategory) {
                           handleBehaviorSelect(firstInCategory.id);
@@ -550,6 +530,10 @@ export function KeycodeSelector({
                               Parameter 1
                               {selectedBehaviorOption.param1Type === "layer" &&
                                 " (Layer)"}
+                              {selectedBehaviorOption.param1Type ===
+                                "bt_command" && " (BT Command)"}
+                              {selectedBehaviorOption.param1Type ===
+                                "out_command" && " (Output)"}
                             </label>
                             {selectedBehaviorOption.param1Type === "layer" ? (
                               <select
@@ -564,6 +548,36 @@ export function KeycodeSelector({
                                     {layer.name || `Layer ${layer.id}`}
                                   </option>
                                 ))}
+                              </select>
+                            ) : selectedBehaviorOption.param1Type ===
+                                "bt_command" ||
+                              selectedBehaviorOption.param1Type ===
+                                "out_command" ? (
+                              <select
+                                value={param1}
+                                onChange={(e) =>
+                                  setParam1(Number(e.target.value))
+                                }
+                                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)]"
+                              >
+                                {(() => {
+                                  const behavior = behaviors.get(
+                                    selectedBehaviorOption.id,
+                                  );
+                                  const metadata = behavior
+                                    ? getBehaviorMetadata(behavior.displayName)
+                                    : null;
+                                  const options = metadata
+                                    ? getBehaviorParamOptions(metadata, 1)
+                                    : null;
+                                  return (
+                                    options?.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    )) || null
+                                  );
+                                })()}
                               </select>
                             ) : (
                               <input
@@ -585,6 +599,10 @@ export function KeycodeSelector({
                               Parameter 2
                               {selectedBehaviorOption.param2Type === "layer" &&
                                 " (Layer)"}
+                              {selectedBehaviorOption.param2Type ===
+                                "bt_command" && " (BT Command)"}
+                              {selectedBehaviorOption.param2Type ===
+                                "out_command" && " (Output)"}
                             </label>
                             {selectedBehaviorOption.param2Type === "layer" ? (
                               <select
@@ -599,6 +617,36 @@ export function KeycodeSelector({
                                     {layer.name || `Layer ${layer.id}`}
                                   </option>
                                 ))}
+                              </select>
+                            ) : selectedBehaviorOption.param2Type ===
+                                "bt_command" ||
+                              selectedBehaviorOption.param2Type ===
+                                "out_command" ? (
+                              <select
+                                value={param2}
+                                onChange={(e) =>
+                                  setParam2(Number(e.target.value))
+                                }
+                                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)]"
+                              >
+                                {(() => {
+                                  const behavior = behaviors.get(
+                                    selectedBehaviorOption.id,
+                                  );
+                                  const metadata = behavior
+                                    ? getBehaviorMetadata(behavior.displayName)
+                                    : null;
+                                  const options = metadata
+                                    ? getBehaviorParamOptions(metadata, 2)
+                                    : null;
+                                  return (
+                                    options?.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    )) || null
+                                  );
+                                })()}
                               </select>
                             ) : (
                               <input
