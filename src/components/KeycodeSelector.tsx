@@ -96,14 +96,19 @@ export function KeycodeSelector({
       const name = behavior.displayName.toLowerCase();
 
       // Categorize behaviors based on exact or prefix match
+      // ZMK uses display names like "Key Press", "Momentary Layer", "To Layer", etc.
       let category: BehaviorCategory = "special";
 
       // Key press behaviors
-      if (name === "kp" || name === "key_press" || name.startsWith("key")) {
+      if (name === "key press" || name === "kp" || name === "key_press" || name.startsWith("key")) {
         category = "keypress";
       }
       // Layer behaviors - match exact names or prefixes
       else if (
+        name === "momentary layer" ||
+        name === "to layer" ||
+        name === "toggle layer" ||
+        name === "layer-tap" ||
         name === "mo" ||
         name === "to" ||
         name === "lt" ||
@@ -118,6 +123,8 @@ export function KeycodeSelector({
       }
       // Modifier behaviors
       else if (
+        name === "mod-tap" ||
+        name === "sticky key" ||
         name === "mt" ||
         name === "sk" ||
         name === "mod_tap" ||
@@ -193,8 +200,10 @@ export function KeycodeSelector({
   const handleKeycodeSelect = useCallback(
     (keycode: KeycodeDefinition) => {
       // Find the key_press behavior
+      // ZMK's behavior display name is "Key Press"
       const kpBehavior = behaviorOptions.find(
         (b) =>
+          b.displayName.toLowerCase() === "key press" ||
           b.displayName.toLowerCase() === "kp" ||
           b.displayName.toLowerCase() === "key_press"
       );

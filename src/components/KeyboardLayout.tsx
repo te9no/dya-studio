@@ -3,8 +3,9 @@
  *
  * Renders the physical keyboard layout based on KeyPhysicalAttrs.
  * Handles key selection, modification display, and interaction.
+ * Responsive to window size with min/max limits.
  */
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { PhysicalKey } from "./PhysicalKey";
 import type {
   PhysicalLayout,
@@ -20,10 +21,11 @@ import {
   HID_USAGE_PAGE_CONSUMER,
 } from "../lib/keycodes";
 
-// Scale factor for converting ZMK units to pixels
-// Use a larger scale for better visibility
-const SCALE = 1.0;
-const UNIT_SIZE = 54; // pixels per unit (for 1U key)
+// Base unit size for 1U key in pixels at scale 1.0
+const BASE_UNIT_SIZE = 54;
+// Min and max scale limits for responsive sizing
+const MIN_SCALE = 0.5;
+const MAX_SCALE = 1.2;
 
 interface KeyboardLayoutProps {
   /** Physical layout configuration */
@@ -75,7 +77,8 @@ function getBindingDisplayName(
   }
 
   // Handle key press - show the key
-  if (behaviorName === "kp" || behaviorName === "key_press") {
+  // ZMK's behavior display name is "Key Press"
+  if (behaviorName === "key press" || behaviorName === "kp" || behaviorName === "key_press") {
     const usage = binding.param1;
     const page = getHidUsagePage(usage);
     const code = page === 0 ? usage : getHidUsageCode(usage);
@@ -98,7 +101,9 @@ function getBindingDisplayName(
   }
 
   // Handle layer behaviors
+  // ZMK's behavior display name is "Momentary Layer"
   if (
+    behaviorName === "momentary layer" ||
     behaviorName === "mo" ||
     behaviorName === "momentary" ||
     behaviorName.includes("layer")
@@ -110,7 +115,8 @@ function getBindingDisplayName(
     return `MO ${layerNum}`;
   }
 
-  if (behaviorName === "to") {
+  // ZMK's behavior display name is "To Layer"
+  if (behaviorName === "to layer" || behaviorName === "to") {
     const layerNum = binding.param1;
     if (layers && layers[layerNum]) {
       return `TO ${layers[layerNum].name || layerNum}`;
@@ -118,7 +124,8 @@ function getBindingDisplayName(
     return `TO ${layerNum}`;
   }
 
-  if (behaviorName === "tog" || behaviorName === "toggle") {
+  // ZMK's behavior display name is "Toggle Layer"
+  if (behaviorName === "toggle layer" || behaviorName === "tog" || behaviorName === "toggle") {
     const layerNum = binding.param1;
     if (layers && layers[layerNum]) {
       return `TG ${layers[layerNum].name || layerNum}`;
@@ -126,7 +133,8 @@ function getBindingDisplayName(
     return `TG ${layerNum}`;
   }
 
-  if (behaviorName === "lt" || behaviorName === "layer_tap") {
+  // ZMK's behavior display name is "Layer-Tap"
+  if (behaviorName === "layer-tap" || behaviorName === "lt" || behaviorName === "layer_tap") {
     const layerNum = binding.param1;
     const keycode = getKeycodeByCode(binding.param2);
     const keyName = keycode?.displayName || `0x${binding.param2.toString(16)}`;
@@ -208,18 +216,21 @@ export function KeyboardLayout({
   isBindingModified,
   getOriginalBinding,
 }: KeyboardLayoutProps) {
-  // Calculate layout bounds for centering
-  const bounds = useMemo(() => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1.0);
+  
+  // Calculate raw layout bounds (at scale 1.0)
+  const rawBounds = useMemo(() => {
     let minX = Infinity,
       minY = Infinity,
       maxX = -Infinity,
       maxY = -Infinity;
 
     layout.keys.forEach((key) => {
-      const x = (key.x / 100) * SCALE * UNIT_SIZE;
-      const y = (key.y / 100) * SCALE * UNIT_SIZE;
-      const w = (key.width / 100) * SCALE * UNIT_SIZE;
-      const h = (key.height / 100) * SCALE * UNIT_SIZE;
+      const x = (key.x / 100) * BASE_UNIT_SIZE;
+      const y = (key.y / 100) * BASE_UNIT_SIZE;
+      const w = (key.width / 100) * BASE_UNIT_SIZE;
+      const h = (key.height / 100) * BASE_UNIT_SIZE;
 
       minX = Math.min(minX, x);
       minY = Math.min(minY, y);
@@ -234,6 +245,40 @@ export function KeyboardLayout({
       offsetY: -minY + 10,
     };
   }, [layout.keys]);
+
+  // Calculate responsive scale based on container width
+  useEffect(() => {
+    const updateScale = () => {
+      if (!containerRef.current) return;
+      
+      const containerWidth = containerRef.current.clientWidth;
+      // Calculate scale to fit the layout in the container with some padding
+      const targetWidth = containerWidth - 32; // 16px padding on each side
+      const naturalScale = targetWidth / rawBounds.width;
+      
+      // Clamp scale between min and max
+      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, naturalScale));
+      setScale(newScale);
+    };
+
+    updateScale();
+    
+    // Create ResizeObserver for responsive updates
+    const resizeObserver = new ResizeObserver(updateScale);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, [rawBounds.width]);
+
+  // Calculate scaled bounds
+  const bounds = useMemo(() => ({
+    width: rawBounds.width * scale,
+    height: rawBounds.height * scale,
+    offsetX: rawBounds.offsetX * scale,
+    offsetY: rawBounds.offsetY * scale,
+  }), [rawBounds, scale]);
 
   // Get display name for a key at position
   const getKeyDisplayName = useCallback(
@@ -254,8 +299,19 @@ export function KeyboardLayout({
     [getOriginalBinding, layer.id, behaviors]
   );
 
+  // Get full binding description for tooltip
+  const getBindingDescription = useCallback(
+    (binding: BehaviorBinding | undefined): string => {
+      if (!binding) return "No binding";
+      const behavior = behaviors.get(binding.behaviorId);
+      const behaviorName = behavior?.displayName || `Behavior ${binding.behaviorId}`;
+      return `${behaviorName} (param1: ${binding.param1}, param2: ${binding.param2})`;
+    },
+    [behaviors]
+  );
+
   return (
-    <div className="relative overflow-auto">
+    <div ref={containerRef} className="relative overflow-auto w-full">
       <div
         className="relative mx-auto"
         style={{
@@ -270,8 +326,8 @@ export function KeyboardLayout({
           // Adjust position with offset for centering
           const adjustedKey: KeyPhysicalAttrs = {
             ...key,
-            x: key.x + (bounds.offsetX / SCALE / UNIT_SIZE) * 100,
-            y: key.y + (bounds.offsetY / SCALE / UNIT_SIZE) * 100,
+            x: key.x + (rawBounds.offsetX / BASE_UNIT_SIZE) * 100,
+            y: key.y + (rawBounds.offsetY / BASE_UNIT_SIZE) * 100,
           };
 
           return (
@@ -285,9 +341,11 @@ export function KeyboardLayout({
               originalDisplayName={
                 modified ? getOriginalDisplayName(position) : undefined
               }
+              bindingDescription={getBindingDescription(binding)}
               isSelected={selectedKey === position}
               onClick={() => onKeyClick(position)}
               onReset={() => onKeyReset(position)}
+              scale={scale}
             />
           );
         })}

@@ -13,6 +13,13 @@ import {
   createMockZMKApp,
 } from "@cormoran/zmk-studio-react-hook/testing";
 
+// Mock ResizeObserver for tests
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}));
+
 // Mock the useKeymap hook
 jest.mock("../../hooks/useKeymap");
 import { useKeymap } from "../../hooks/useKeymap";

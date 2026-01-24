@@ -9,11 +9,8 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 import { IconRotateClockwise } from "@tabler/icons-react";
 import type { KeyPhysicalAttrs, BehaviorBinding } from "../hooks/useKeymap";
 
-// Scale factor for converting ZMK units (1/100 mm) to pixels
-// ZMK uses 1/100 of a "unit" (usually 19.05mm key spacing)
-// Use a larger scale for better visibility
-const SCALE = 1.0; // Adjust as needed for display
-const PIXELS_PER_UNIT = 54; // Pixels per key unit (for 1U key)
+// Base unit size for 1U key in pixels at scale 1.0
+const BASE_UNIT_SIZE = 54;
 
 interface PhysicalKeyProps {
   /** Physical attributes of the key (position, size, rotation) */
@@ -28,12 +25,16 @@ interface PhysicalKeyProps {
   displayName: string;
   /** Original display name (for tooltip when modified) */
   originalDisplayName?: string;
+  /** Full binding description including params (for tooltip) */
+  bindingDescription?: string;
   /** Whether this key is currently selected */
   isSelected: boolean;
   /** Callback when key is clicked */
   onClick: () => void;
   /** Callback to reset this key to original */
   onReset: () => void;
+  /** Scale factor for responsive sizing */
+  scale?: number;
 }
 
 export function PhysicalKey({
@@ -41,25 +42,28 @@ export function PhysicalKey({
   isModified,
   displayName,
   originalDisplayName,
+  bindingDescription,
   isSelected,
   onClick,
   onReset,
+  scale = 1.0,
 }: PhysicalKeyProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  // Calculate dimensions and position
+  // Calculate dimensions and position with scale
   // ZMK uses centimils (1/100 of a key unit) for dimensions
   // Standard key unit is usually around 19.05mm = 1900 centimils
   const style = useMemo(() => {
-    const width = (attrs.width / 100) * SCALE * PIXELS_PER_UNIT;
-    const height = (attrs.height / 100) * SCALE * PIXELS_PER_UNIT;
-    const x = (attrs.x / 100) * SCALE * PIXELS_PER_UNIT;
-    const y = (attrs.y / 100) * SCALE * PIXELS_PER_UNIT;
+    const unitSize = BASE_UNIT_SIZE * scale;
+    const width = (attrs.width / 100) * unitSize;
+    const height = (attrs.height / 100) * unitSize;
+    const x = (attrs.x / 100) * unitSize;
+    const y = (attrs.y / 100) * unitSize;
 
     // Rotation: r is in centidegrees, rx and ry are rotation center
     const rotation = attrs.r / 100;
-    const rotationCenterX = (attrs.rx / 100) * SCALE * PIXELS_PER_UNIT;
-    const rotationCenterY = (attrs.ry / 100) * SCALE * PIXELS_PER_UNIT;
+    const rotationCenterX = (attrs.rx / 100) * unitSize;
+    const rotationCenterY = (attrs.ry / 100) * unitSize;
 
     return {
       width: `${Math.max(width, 20)}px`,
@@ -75,7 +79,14 @@ export function PhysicalKey({
           ? `${rotationCenterX - x}px ${rotationCenterY - y}px`
           : undefined,
     };
-  }, [attrs]);
+  }, [attrs, scale]);
+
+  // Calculate dynamic font size based on scale
+  const fontSize = useMemo(() => {
+    const baseSize = 12; // base font size in px
+    const scaledSize = baseSize * scale;
+    return Math.max(8, Math.min(14, scaledSize)); // clamp between 8px and 14px
+  }, [scale]);
 
   // Key content
   const keyContent = (
@@ -99,13 +110,14 @@ export function PhysicalKey({
       {/* Display Name */}
       <span
         className={`
-          text-xs font-medium text-center leading-tight break-words line-clamp-2
+          font-medium text-center leading-tight break-words line-clamp-2
           ${
             isModified
               ? "text-[var(--color-neon)]"
               : "text-[var(--color-text)]"
           }
         `}
+        style={{ fontSize: `${fontSize}px` }}
         title={displayName}
       >
         {displayName || "—"}
@@ -135,26 +147,34 @@ export function PhysicalKey({
     </div>
   );
 
-  // Wrap with tooltip if modified
-  if (isModified && originalDisplayName) {
-    return (
-      <Tooltip.Provider delayDuration={200}>
-        <Tooltip.Root>
-          <Tooltip.Trigger asChild>{keyContent}</Tooltip.Trigger>
-          <Tooltip.Portal>
-            <Tooltip.Content
-              className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
-              sideOffset={5}
-            >
-              <span className="text-[var(--color-text-muted)]">Original: </span>
-              <span>{originalDisplayName}</span>
-              <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
-            </Tooltip.Content>
-          </Tooltip.Portal>
-        </Tooltip.Root>
-      </Tooltip.Provider>
-    );
-  }
-
-  return keyContent;
+  // Always wrap with tooltip to show binding info
+  return (
+    <Tooltip.Provider delayDuration={200}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>{keyContent}</Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            className="px-3 py-2 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50 max-w-xs"
+            sideOffset={5}
+          >
+            <div className="space-y-1">
+              {/* Current binding info */}
+              <div>
+                <span className="text-[var(--color-text-muted)]">Current: </span>
+                <span className="font-medium">{bindingDescription || displayName}</span>
+              </div>
+              {/* Original binding info when modified */}
+              {isModified && originalDisplayName && (
+                <div>
+                  <span className="text-[var(--color-text-muted)]">Original: </span>
+                  <span>{originalDisplayName}</span>
+                </div>
+              )}
+            </div>
+            <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
 }
