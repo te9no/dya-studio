@@ -1,0 +1,958 @@
+/**
+ * ZMK Keycode Database
+ *
+ * This file contains comprehensive keycode definitions for ZMK keyboards.
+ * The keycodes are based on HID usage tables and ZMK-specific behaviors.
+ *
+ * Reference:
+ * - HID Usage Tables: https://usb.org/document-library/hid-usage-tables-15
+ * - ZMK Keycodes: https://zmk.dev/docs/keymaps/list-of-keycodes
+ */
+
+// HID Usage Page definitions
+export const HID_USAGE_PAGE_KEYBOARD = 0x07;
+export const HID_USAGE_PAGE_CONSUMER = 0x0c;
+
+/**
+ * Create a combined HID usage value from page and code.
+ * Format: upper 16 bits = page, lower 16 bits = code
+ */
+export function createHidUsage(page: number, code: number): number {
+  return (page << 16) | code;
+}
+
+export function getHidUsagePage(usage: number): number {
+  return (usage >> 16) & 0xffff;
+}
+
+export function getHidUsageCode(usage: number): number {
+  return usage & 0xffff;
+}
+
+// Keycode category for UI organization
+export type KeycodeCategory =
+  | "letters"
+  | "numbers"
+  | "modifiers"
+  | "navigation"
+  | "function"
+  | "numpad"
+  | "media"
+  | "system"
+  | "punctuation"
+  | "international"
+  | "miscellaneous";
+
+// Keycode definition interface
+export interface KeycodeDefinition {
+  /** HID usage code (keyboard page) or full usage (with page) */
+  code: number;
+  /** Display name shown on key */
+  displayName: string;
+  /** Full name for search and accessibility */
+  name: string;
+  /** Category for grouping in selector */
+  category: KeycodeCategory;
+  /** Aliases for search (e.g., ["ESC"] for Escape) */
+  aliases?: string[];
+  /** Description for tooltip */
+  description?: string;
+  /** Icon name for miscellaneous keys */
+  icon?: string;
+}
+
+// Standard keyboard keycodes (HID Usage Page 0x07)
+export const KEYBOARD_KEYCODES: KeycodeDefinition[] = [
+  // Letters (0x04-0x1D)
+  { code: 0x04, displayName: "A", name: "A", category: "letters" },
+  { code: 0x05, displayName: "B", name: "B", category: "letters" },
+  { code: 0x06, displayName: "C", name: "C", category: "letters" },
+  { code: 0x07, displayName: "D", name: "D", category: "letters" },
+  { code: 0x08, displayName: "E", name: "E", category: "letters" },
+  { code: 0x09, displayName: "F", name: "F", category: "letters" },
+  { code: 0x0a, displayName: "G", name: "G", category: "letters" },
+  { code: 0x0b, displayName: "H", name: "H", category: "letters" },
+  { code: 0x0c, displayName: "I", name: "I", category: "letters" },
+  { code: 0x0d, displayName: "J", name: "J", category: "letters" },
+  { code: 0x0e, displayName: "K", name: "K", category: "letters" },
+  { code: 0x0f, displayName: "L", name: "L", category: "letters" },
+  { code: 0x10, displayName: "M", name: "M", category: "letters" },
+  { code: 0x11, displayName: "N", name: "N", category: "letters" },
+  { code: 0x12, displayName: "O", name: "O", category: "letters" },
+  { code: 0x13, displayName: "P", name: "P", category: "letters" },
+  { code: 0x14, displayName: "Q", name: "Q", category: "letters" },
+  { code: 0x15, displayName: "R", name: "R", category: "letters" },
+  { code: 0x16, displayName: "S", name: "S", category: "letters" },
+  { code: 0x17, displayName: "T", name: "T", category: "letters" },
+  { code: 0x18, displayName: "U", name: "U", category: "letters" },
+  { code: 0x19, displayName: "V", name: "V", category: "letters" },
+  { code: 0x1a, displayName: "W", name: "W", category: "letters" },
+  { code: 0x1b, displayName: "X", name: "X", category: "letters" },
+  { code: 0x1c, displayName: "Y", name: "Y", category: "letters" },
+  { code: 0x1d, displayName: "Z", name: "Z", category: "letters" },
+
+  // Numbers (0x1E-0x27)
+  {
+    code: 0x1e,
+    displayName: "1",
+    name: "1",
+    category: "numbers",
+    aliases: ["!"],
+  },
+  {
+    code: 0x1f,
+    displayName: "2",
+    name: "2",
+    category: "numbers",
+    aliases: ["@"],
+  },
+  {
+    code: 0x20,
+    displayName: "3",
+    name: "3",
+    category: "numbers",
+    aliases: ["#"],
+  },
+  {
+    code: 0x21,
+    displayName: "4",
+    name: "4",
+    category: "numbers",
+    aliases: ["$"],
+  },
+  {
+    code: 0x22,
+    displayName: "5",
+    name: "5",
+    category: "numbers",
+    aliases: ["%"],
+  },
+  {
+    code: 0x23,
+    displayName: "6",
+    name: "6",
+    category: "numbers",
+    aliases: ["^"],
+  },
+  {
+    code: 0x24,
+    displayName: "7",
+    name: "7",
+    category: "numbers",
+    aliases: ["&"],
+  },
+  {
+    code: 0x25,
+    displayName: "8",
+    name: "8",
+    category: "numbers",
+    aliases: ["*"],
+  },
+  {
+    code: 0x26,
+    displayName: "9",
+    name: "9",
+    category: "numbers",
+    aliases: ["("],
+  },
+  {
+    code: 0x27,
+    displayName: "0",
+    name: "0",
+    category: "numbers",
+    aliases: [")"],
+  },
+
+  // Function keys (0x3A-0x45, 0x68-0x73)
+  { code: 0x3a, displayName: "F1", name: "F1", category: "function" },
+  { code: 0x3b, displayName: "F2", name: "F2", category: "function" },
+  { code: 0x3c, displayName: "F3", name: "F3", category: "function" },
+  { code: 0x3d, displayName: "F4", name: "F4", category: "function" },
+  { code: 0x3e, displayName: "F5", name: "F5", category: "function" },
+  { code: 0x3f, displayName: "F6", name: "F6", category: "function" },
+  { code: 0x40, displayName: "F7", name: "F7", category: "function" },
+  { code: 0x41, displayName: "F8", name: "F8", category: "function" },
+  { code: 0x42, displayName: "F9", name: "F9", category: "function" },
+  { code: 0x43, displayName: "F10", name: "F10", category: "function" },
+  { code: 0x44, displayName: "F11", name: "F11", category: "function" },
+  { code: 0x45, displayName: "F12", name: "F12", category: "function" },
+  { code: 0x68, displayName: "F13", name: "F13", category: "function" },
+  { code: 0x69, displayName: "F14", name: "F14", category: "function" },
+  { code: 0x6a, displayName: "F15", name: "F15", category: "function" },
+  { code: 0x6b, displayName: "F16", name: "F16", category: "function" },
+  { code: 0x6c, displayName: "F17", name: "F17", category: "function" },
+  { code: 0x6d, displayName: "F18", name: "F18", category: "function" },
+  { code: 0x6e, displayName: "F19", name: "F19", category: "function" },
+  { code: 0x6f, displayName: "F20", name: "F20", category: "function" },
+  { code: 0x70, displayName: "F21", name: "F21", category: "function" },
+  { code: 0x71, displayName: "F22", name: "F22", category: "function" },
+  { code: 0x72, displayName: "F23", name: "F23", category: "function" },
+  { code: 0x73, displayName: "F24", name: "F24", category: "function" },
+
+  // Modifiers (0xE0-0xE7)
+  {
+    code: 0xe0,
+    displayName: "LCtrl",
+    name: "Left Control",
+    category: "modifiers",
+    aliases: ["LCTRL", "LC"],
+  },
+  {
+    code: 0xe1,
+    displayName: "LShift",
+    name: "Left Shift",
+    category: "modifiers",
+    aliases: ["LSHIFT", "LS"],
+  },
+  {
+    code: 0xe2,
+    displayName: "LAlt",
+    name: "Left Alt",
+    category: "modifiers",
+    aliases: ["LALT", "LA", "Option"],
+  },
+  {
+    code: 0xe3,
+    displayName: "LGui",
+    name: "Left GUI",
+    category: "modifiers",
+    aliases: ["LGUI", "LG", "LCMD", "LWIN", "Cmd", "Win"],
+  },
+  {
+    code: 0xe4,
+    displayName: "RCtrl",
+    name: "Right Control",
+    category: "modifiers",
+    aliases: ["RCTRL", "RC"],
+  },
+  {
+    code: 0xe5,
+    displayName: "RShift",
+    name: "Right Shift",
+    category: "modifiers",
+    aliases: ["RSHIFT", "RS"],
+  },
+  {
+    code: 0xe6,
+    displayName: "RAlt",
+    name: "Right Alt",
+    category: "modifiers",
+    aliases: ["RALT", "RA", "AltGr"],
+  },
+  {
+    code: 0xe7,
+    displayName: "RGui",
+    name: "Right GUI",
+    category: "modifiers",
+    aliases: ["RGUI", "RG", "RCMD", "RWIN"],
+  },
+
+  // Navigation keys
+  {
+    code: 0x28,
+    displayName: "Enter",
+    name: "Enter",
+    category: "navigation",
+    aliases: ["Return", "RET"],
+  },
+  {
+    code: 0x29,
+    displayName: "Esc",
+    name: "Escape",
+    category: "navigation",
+    aliases: ["ESC"],
+  },
+  {
+    code: 0x2a,
+    displayName: "Bksp",
+    name: "Backspace",
+    category: "navigation",
+    aliases: ["BSPC", "BS"],
+  },
+  {
+    code: 0x2b,
+    displayName: "Tab",
+    name: "Tab",
+    category: "navigation",
+    aliases: ["TAB"],
+  },
+  {
+    code: 0x2c,
+    displayName: "Space",
+    name: "Space",
+    category: "navigation",
+    aliases: ["SPC"],
+  },
+  {
+    code: 0x39,
+    displayName: "Caps",
+    name: "Caps Lock",
+    category: "navigation",
+    aliases: ["CAPS", "CAPSLOCK"],
+  },
+  {
+    code: 0x46,
+    displayName: "PrtSc",
+    name: "Print Screen",
+    category: "navigation",
+    aliases: ["PSCRN", "PrintScreen"],
+  },
+  {
+    code: 0x47,
+    displayName: "ScrLk",
+    name: "Scroll Lock",
+    category: "navigation",
+    aliases: ["SLCK", "ScrollLock"],
+  },
+  {
+    code: 0x48,
+    displayName: "Pause",
+    name: "Pause",
+    category: "navigation",
+    aliases: ["PAUSE", "Break"],
+  },
+  {
+    code: 0x49,
+    displayName: "Ins",
+    name: "Insert",
+    category: "navigation",
+    aliases: ["INS"],
+  },
+  {
+    code: 0x4a,
+    displayName: "Home",
+    name: "Home",
+    category: "navigation",
+    aliases: ["HOME"],
+  },
+  {
+    code: 0x4b,
+    displayName: "PgUp",
+    name: "Page Up",
+    category: "navigation",
+    aliases: ["PGUP", "PageUp"],
+  },
+  {
+    code: 0x4c,
+    displayName: "Del",
+    name: "Delete",
+    category: "navigation",
+    aliases: ["DEL"],
+  },
+  {
+    code: 0x4d,
+    displayName: "End",
+    name: "End",
+    category: "navigation",
+    aliases: ["END"],
+  },
+  {
+    code: 0x4e,
+    displayName: "PgDn",
+    name: "Page Down",
+    category: "navigation",
+    aliases: ["PGDN", "PageDown"],
+  },
+  {
+    code: 0x4f,
+    displayName: "→",
+    name: "Right Arrow",
+    category: "navigation",
+    aliases: ["RIGHT", "→"],
+  },
+  {
+    code: 0x50,
+    displayName: "←",
+    name: "Left Arrow",
+    category: "navigation",
+    aliases: ["LEFT", "←"],
+  },
+  {
+    code: 0x51,
+    displayName: "↓",
+    name: "Down Arrow",
+    category: "navigation",
+    aliases: ["DOWN", "↓"],
+  },
+  {
+    code: 0x52,
+    displayName: "↑",
+    name: "Up Arrow",
+    category: "navigation",
+    aliases: ["UP", "↑"],
+  },
+
+  // Punctuation
+  {
+    code: 0x2d,
+    displayName: "-",
+    name: "Minus",
+    category: "punctuation",
+    aliases: ["MINUS", "_"],
+  },
+  {
+    code: 0x2e,
+    displayName: "=",
+    name: "Equal",
+    category: "punctuation",
+    aliases: ["EQUAL", "+"],
+  },
+  {
+    code: 0x2f,
+    displayName: "[",
+    name: "Left Bracket",
+    category: "punctuation",
+    aliases: ["LBKT", "{"],
+  },
+  {
+    code: 0x30,
+    displayName: "]",
+    name: "Right Bracket",
+    category: "punctuation",
+    aliases: ["RBKT", "}"],
+  },
+  {
+    code: 0x31,
+    displayName: "\\",
+    name: "Backslash",
+    category: "punctuation",
+    aliases: ["BSLH", "|"],
+  },
+  {
+    code: 0x33,
+    displayName: ";",
+    name: "Semicolon",
+    category: "punctuation",
+    aliases: ["SEMI", ":"],
+  },
+  {
+    code: 0x34,
+    displayName: "'",
+    name: "Single Quote",
+    category: "punctuation",
+    aliases: ["SQT", "APOS", '"'],
+  },
+  {
+    code: 0x35,
+    displayName: "`",
+    name: "Grave",
+    category: "punctuation",
+    aliases: ["GRAVE", "~"],
+  },
+  {
+    code: 0x36,
+    displayName: ",",
+    name: "Comma",
+    category: "punctuation",
+    aliases: ["COMMA", "<"],
+  },
+  {
+    code: 0x37,
+    displayName: ".",
+    name: "Period",
+    category: "punctuation",
+    aliases: ["DOT", ">"],
+  },
+  {
+    code: 0x38,
+    displayName: "/",
+    name: "Forward Slash",
+    category: "punctuation",
+    aliases: ["FSLH", "SLASH", "?"],
+  },
+  {
+    code: 0x32,
+    displayName: "#",
+    name: "Non-US Hash",
+    category: "punctuation",
+    aliases: ["NUHS", "NON_US_HASH"],
+  },
+  {
+    code: 0x64,
+    displayName: "\\",
+    name: "Non-US Backslash",
+    category: "punctuation",
+    aliases: ["NUBS", "NON_US_BSLH"],
+  },
+
+  // Numpad
+  {
+    code: 0x53,
+    displayName: "Num",
+    name: "Num Lock",
+    category: "numpad",
+    aliases: ["NLCK", "NumLock"],
+  },
+  {
+    code: 0x54,
+    displayName: "KP/",
+    name: "Keypad Divide",
+    category: "numpad",
+    aliases: ["KP_SLASH"],
+  },
+  {
+    code: 0x55,
+    displayName: "KP*",
+    name: "Keypad Multiply",
+    category: "numpad",
+    aliases: ["KP_MULTIPLY"],
+  },
+  {
+    code: 0x56,
+    displayName: "KP-",
+    name: "Keypad Minus",
+    category: "numpad",
+    aliases: ["KP_MINUS"],
+  },
+  {
+    code: 0x57,
+    displayName: "KP+",
+    name: "Keypad Plus",
+    category: "numpad",
+    aliases: ["KP_PLUS"],
+  },
+  {
+    code: 0x58,
+    displayName: "KPEnt",
+    name: "Keypad Enter",
+    category: "numpad",
+    aliases: ["KP_ENTER"],
+  },
+  {
+    code: 0x59,
+    displayName: "KP1",
+    name: "Keypad 1",
+    category: "numpad",
+    aliases: ["KP_N1"],
+  },
+  {
+    code: 0x5a,
+    displayName: "KP2",
+    name: "Keypad 2",
+    category: "numpad",
+    aliases: ["KP_N2"],
+  },
+  {
+    code: 0x5b,
+    displayName: "KP3",
+    name: "Keypad 3",
+    category: "numpad",
+    aliases: ["KP_N3"],
+  },
+  {
+    code: 0x5c,
+    displayName: "KP4",
+    name: "Keypad 4",
+    category: "numpad",
+    aliases: ["KP_N4"],
+  },
+  {
+    code: 0x5d,
+    displayName: "KP5",
+    name: "Keypad 5",
+    category: "numpad",
+    aliases: ["KP_N5"],
+  },
+  {
+    code: 0x5e,
+    displayName: "KP6",
+    name: "Keypad 6",
+    category: "numpad",
+    aliases: ["KP_N6"],
+  },
+  {
+    code: 0x5f,
+    displayName: "KP7",
+    name: "Keypad 7",
+    category: "numpad",
+    aliases: ["KP_N7"],
+  },
+  {
+    code: 0x60,
+    displayName: "KP8",
+    name: "Keypad 8",
+    category: "numpad",
+    aliases: ["KP_N8"],
+  },
+  {
+    code: 0x61,
+    displayName: "KP9",
+    name: "Keypad 9",
+    category: "numpad",
+    aliases: ["KP_N9"],
+  },
+  {
+    code: 0x62,
+    displayName: "KP0",
+    name: "Keypad 0",
+    category: "numpad",
+    aliases: ["KP_N0"],
+  },
+  {
+    code: 0x63,
+    displayName: "KP.",
+    name: "Keypad Dot",
+    category: "numpad",
+    aliases: ["KP_DOT"],
+  },
+  {
+    code: 0x67,
+    displayName: "KP=",
+    name: "Keypad Equal",
+    category: "numpad",
+    aliases: ["KP_EQUAL"],
+  },
+
+  // Application/Context key
+  {
+    code: 0x65,
+    displayName: "App",
+    name: "Application",
+    category: "miscellaneous",
+    aliases: ["K_APP", "Menu", "Context"],
+  },
+
+  // Power key
+  {
+    code: 0x66,
+    displayName: "Pwr",
+    name: "Power",
+    category: "system",
+    aliases: ["K_PWR", "POWER"],
+  },
+
+  // International keys
+  {
+    code: 0x87,
+    displayName: "RO",
+    name: "International 1 (Ro)",
+    category: "international",
+    aliases: ["INT1", "INT_RO"],
+  },
+  {
+    code: 0x88,
+    displayName: "KANA",
+    name: "International 2 (Kana)",
+    category: "international",
+    aliases: ["INT2", "INT_KANA"],
+  },
+  {
+    code: 0x89,
+    displayName: "JYEN",
+    name: "International 3 (Yen)",
+    category: "international",
+    aliases: ["INT3", "INT_YEN"],
+  },
+  {
+    code: 0x8a,
+    displayName: "HENK",
+    name: "International 4 (Henkan)",
+    category: "international",
+    aliases: ["INT4", "INT_HENKAN"],
+  },
+  {
+    code: 0x8b,
+    displayName: "MHEN",
+    name: "International 5 (Muhenkan)",
+    category: "international",
+    aliases: ["INT5", "INT_MUHENKAN"],
+  },
+  {
+    code: 0x90,
+    displayName: "Lang1",
+    name: "Language 1",
+    category: "international",
+    aliases: ["LANG1", "HAEN"],
+  },
+  {
+    code: 0x91,
+    displayName: "Lang2",
+    name: "Language 2",
+    category: "international",
+    aliases: ["LANG2", "HAEJ"],
+  },
+];
+
+// Consumer keycodes (HID Usage Page 0x0C)
+// These are used for media controls, brightness, etc.
+export const CONSUMER_KEYCODES: KeycodeDefinition[] = [
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xe9),
+    displayName: "Vol+",
+    name: "Volume Up",
+    category: "media",
+    aliases: ["C_VOL_UP", "VOLUME_UP"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xea),
+    displayName: "Vol-",
+    name: "Volume Down",
+    category: "media",
+    aliases: ["C_VOL_DN", "VOLUME_DOWN"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xe2),
+    displayName: "Mute",
+    name: "Mute",
+    category: "media",
+    aliases: ["C_MUTE"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xcd),
+    displayName: "⏯",
+    name: "Play/Pause",
+    category: "media",
+    aliases: ["C_PP", "C_PLAY_PAUSE"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xb5),
+    displayName: "⏭",
+    name: "Next Track",
+    category: "media",
+    aliases: ["C_NEXT"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xb6),
+    displayName: "⏮",
+    name: "Previous Track",
+    category: "media",
+    aliases: ["C_PREV"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xb7),
+    displayName: "⏹",
+    name: "Stop",
+    category: "media",
+    aliases: ["C_STOP"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xb8),
+    displayName: "⏏",
+    name: "Eject",
+    category: "media",
+    aliases: ["C_EJECT"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x6f),
+    displayName: "☀+",
+    name: "Brightness Up",
+    category: "media",
+    aliases: ["C_BRI_UP", "C_BRIGHTNESS_INC"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x70),
+    displayName: "☀-",
+    name: "Brightness Down",
+    category: "media",
+    aliases: ["C_BRI_DN", "C_BRIGHTNESS_DEC"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xb0),
+    displayName: "⏯M",
+    name: "Media Play",
+    category: "media",
+    aliases: ["C_PLAY"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xb1),
+    displayName: "⏸",
+    name: "Media Pause",
+    category: "media",
+    aliases: ["C_PAUSE"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xb2),
+    displayName: "●",
+    name: "Record",
+    category: "media",
+    aliases: ["C_REC", "C_RECORD"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xb3),
+    displayName: "⏩",
+    name: "Fast Forward",
+    category: "media",
+    aliases: ["C_FF", "C_FAST_FORWARD"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0xb4),
+    displayName: "⏪",
+    name: "Rewind",
+    category: "media",
+    aliases: ["C_RW", "C_REWIND"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x183),
+    displayName: "🎵",
+    name: "Media Select",
+    category: "media",
+    aliases: ["C_MEDIA", "C_MEDIA_SELECT"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x194),
+    displayName: "📁",
+    name: "My Computer",
+    category: "system",
+    aliases: ["C_AL_MY_COMPUTER"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x196),
+    displayName: "🌐",
+    name: "WWW Browser",
+    category: "system",
+    aliases: ["C_AL_WWW"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x192),
+    displayName: "🧮",
+    name: "Calculator",
+    category: "system",
+    aliases: ["C_AL_CALC"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x18a),
+    displayName: "📧",
+    name: "Email",
+    category: "system",
+    aliases: ["C_AL_EMAIL"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x221),
+    displayName: "🔍",
+    name: "Search",
+    category: "system",
+    aliases: ["C_AC_SEARCH"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x223),
+    displayName: "🏠",
+    name: "Browser Home",
+    category: "system",
+    aliases: ["C_AC_HOME"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x224),
+    displayName: "←",
+    name: "Browser Back",
+    category: "system",
+    aliases: ["C_AC_BACK"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x225),
+    displayName: "→",
+    name: "Browser Forward",
+    category: "system",
+    aliases: ["C_AC_FORWARD"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x226),
+    displayName: "⏹",
+    name: "Browser Stop",
+    category: "system",
+    aliases: ["C_AC_STOP"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x227),
+    displayName: "🔄",
+    name: "Browser Refresh",
+    category: "system",
+    aliases: ["C_AC_REFRESH"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x22a),
+    displayName: "⭐",
+    name: "Browser Bookmarks",
+    category: "system",
+    aliases: ["C_AC_BOOKMARKS"],
+  },
+  {
+    code: createHidUsage(HID_USAGE_PAGE_CONSUMER, 0x19e),
+    displayName: "🔒",
+    name: "Screen Lock",
+    category: "system",
+    aliases: ["C_AL_LOCK"],
+  },
+];
+
+// All keycodes combined
+export const ALL_KEYCODES: KeycodeDefinition[] = [
+  ...KEYBOARD_KEYCODES,
+  ...CONSUMER_KEYCODES,
+];
+
+// Lookup maps for efficient access
+const keycodeByCode = new Map<number, KeycodeDefinition>();
+const keycodeByName = new Map<string, KeycodeDefinition>();
+
+// Build lookup maps
+ALL_KEYCODES.forEach((kc) => {
+  keycodeByCode.set(kc.code, kc);
+  keycodeByName.set(kc.name.toLowerCase(), kc);
+  kc.aliases?.forEach((alias) => {
+    keycodeByName.set(alias.toLowerCase(), kc);
+  });
+});
+
+/**
+ * Get keycode definition by HID code
+ */
+export function getKeycodeByCode(code: number): KeycodeDefinition | undefined {
+  return keycodeByCode.get(code);
+}
+
+/**
+ * Get keycode definition by name or alias
+ */
+export function getKeycodeByName(name: string): KeycodeDefinition | undefined {
+  return keycodeByName.get(name.toLowerCase());
+}
+
+/**
+ * Search keycodes by query string
+ * Matches against name, displayName, and aliases
+ */
+export function searchKeycodes(query: string): KeycodeDefinition[] {
+  if (!query.trim()) return [];
+  const lowerQuery = query.toLowerCase();
+
+  return ALL_KEYCODES.filter((kc) => {
+    if (kc.name.toLowerCase().includes(lowerQuery)) return true;
+    if (kc.displayName.toLowerCase().includes(lowerQuery)) return true;
+    if (kc.aliases?.some((a) => a.toLowerCase().includes(lowerQuery)))
+      return true;
+    return false;
+  });
+}
+
+/**
+ * Get keycodes by category
+ */
+export function getKeycodesByCategory(
+  category: KeycodeCategory,
+): KeycodeDefinition[] {
+  return ALL_KEYCODES.filter((kc) => kc.category === category);
+}
+
+/**
+ * Get all unique categories
+ */
+export function getAllCategories(): KeycodeCategory[] {
+  const categories = new Set<KeycodeCategory>();
+  ALL_KEYCODES.forEach((kc) => categories.add(kc.category));
+  return Array.from(categories);
+}
+
+// Category display names for UI
+export const CATEGORY_DISPLAY_NAMES: Record<KeycodeCategory, string> = {
+  letters: "Letters",
+  numbers: "Numbers",
+  modifiers: "Modifiers",
+  navigation: "Navigation",
+  function: "Function Keys",
+  numpad: "Numpad",
+  media: "Media",
+  system: "System",
+  punctuation: "Punctuation",
+  international: "International",
+  miscellaneous: "Miscellaneous",
+};

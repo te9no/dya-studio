@@ -1,6 +1,178 @@
-import { IconKeyboard } from "@tabler/icons-react";
+import { useState, useContext, useCallback, useMemo } from "react";
+import {
+  IconKeyboard,
+  IconDeviceFloppy,
+  IconRefresh,
+  IconChevronUp,
+  IconChevronDown,
+  IconAlertCircle,
+  IconLoader2,
+  IconPlus,
+  IconTrash,
+  IconRestore,
+} from "@tabler/icons-react";
+import * as Tooltip from "@radix-ui/react-tooltip";
+import { ConnectionContext } from "../components/DeviceConnection";
+import { KeyboardLayout } from "../components/KeyboardLayout";
+import { KeycodeSelector } from "../components/KeycodeSelector";
+import { UnlockPrompt } from "../components/UnlockPrompt";
+import { useKeymap } from "../hooks/useKeymap";
+import type { BehaviorBinding } from "../hooks/useKeymap";
 
 export function KeymapPage() {
+  const connection = useContext(ConnectionContext);
+  const keymap = useKeymap();
+
+  // Local UI state
+  const [selectedLayerIndex, setSelectedLayerIndex] = useState(0);
+  const [selectedKeyPosition, setSelectedKeyPosition] = useState<number | null>(
+    null
+  );
+  const [showKeycodeSelector, setShowKeycodeSelector] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDiscarding, setIsDiscarding] = useState(false);
+
+  // Get current layer
+  const currentLayer = useMemo(() => {
+    if (!keymap.keymap?.layers) return null;
+    return keymap.keymap.layers[selectedLayerIndex] ?? null;
+  }, [keymap.keymap?.layers, selectedLayerIndex]);
+
+  // Get current physical layout
+  const currentLayout = useMemo(() => {
+    if (!keymap.physicalLayouts?.layouts) return null;
+    const index = keymap.physicalLayouts.activeLayoutIndex;
+    return keymap.physicalLayouts.layouts[index] ?? null;
+  }, [keymap.physicalLayouts]);
+
+  // Layers for the selector
+  const layersForSelector = useMemo(() => {
+    if (!keymap.keymap?.layers) return [];
+    return keymap.keymap.layers.map((l) => ({ id: l.id, name: l.name }));
+  }, [keymap.keymap?.layers]);
+
+  // Get current binding for selected key
+  const currentBinding = useMemo(() => {
+    if (selectedKeyPosition === null || !currentLayer) return null;
+    return currentLayer.bindings[selectedKeyPosition] ?? null;
+  }, [selectedKeyPosition, currentLayer]);
+
+  // Handle key click
+  const handleKeyClick = useCallback((keyPosition: number) => {
+    setSelectedKeyPosition(keyPosition);
+    setShowKeycodeSelector(true);
+  }, []);
+
+  // Handle key reset
+  const handleKeyReset = useCallback(
+    async (keyPosition: number) => {
+      if (!currentLayer) return;
+      await keymap.resetBinding(currentLayer.id, keyPosition);
+    },
+    [currentLayer, keymap]
+  );
+
+  // Handle binding selection
+  const handleBindingSelect = useCallback(
+    async (binding: BehaviorBinding) => {
+      if (!currentLayer || selectedKeyPosition === null) return;
+      await keymap.setBinding(currentLayer.id, selectedKeyPosition, binding);
+      setShowKeycodeSelector(false);
+      setSelectedKeyPosition(null);
+    },
+    [currentLayer, selectedKeyPosition, keymap]
+  );
+
+  // Handle save
+  const handleSave = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      await keymap.saveChanges();
+    } finally {
+      setIsSaving(false);
+    }
+  }, [keymap]);
+
+  // Handle discard
+  const handleDiscard = useCallback(async () => {
+    if (!confirm("Are you sure you want to discard all changes?")) return;
+    setIsDiscarding(true);
+    try {
+      await keymap.discardChanges();
+    } finally {
+      setIsDiscarding(false);
+    }
+  }, [keymap]);
+
+  // Handle layer move up
+  const handleMoveLayerUp = useCallback(async () => {
+    if (selectedLayerIndex <= 0) return;
+    const success = await keymap.moveLayer(
+      selectedLayerIndex,
+      selectedLayerIndex - 1
+    );
+    if (success) {
+      setSelectedLayerIndex(selectedLayerIndex - 1);
+    }
+  }, [selectedLayerIndex, keymap]);
+
+  // Handle layer move down
+  const handleMoveLayerDown = useCallback(async () => {
+    if (!keymap.keymap?.layers) return;
+    if (selectedLayerIndex >= keymap.keymap.layers.length - 1) return;
+    const success = await keymap.moveLayer(
+      selectedLayerIndex,
+      selectedLayerIndex + 1
+    );
+    if (success) {
+      setSelectedLayerIndex(selectedLayerIndex + 1);
+    }
+  }, [selectedLayerIndex, keymap]);
+
+  // Handle add layer
+  const handleAddLayer = useCallback(async () => {
+    const result = await keymap.addLayer();
+    if (result) {
+      // Select the new layer
+      setSelectedLayerIndex(result.index);
+    }
+  }, [keymap]);
+
+  // Handle delete layer
+  const handleDeleteLayer = useCallback(async () => {
+    if (!keymap.keymap?.layers || keymap.keymap.layers.length <= 1) return;
+    if (!confirm("Are you sure you want to delete this layer?")) return;
+    
+    const success = await keymap.removeLayer(selectedLayerIndex);
+    if (success) {
+      // Adjust selected index if we deleted the last layer
+      if (selectedLayerIndex >= (keymap.keymap.layers.length - 1)) {
+        setSelectedLayerIndex(Math.max(0, selectedLayerIndex - 1));
+      }
+    }
+  }, [selectedLayerIndex, keymap]);
+
+  // Handle restore layer
+  const handleRestoreLayer = useCallback(async () => {
+    if (keymap.removedLayerIds.length === 0) return;
+    
+    // Restore the most recently removed layer at the end
+    const layerId = keymap.removedLayerIds[keymap.removedLayerIds.length - 1];
+    const atIndex = keymap.keymap?.layers.length ?? 0;
+    
+    const layer = await keymap.restoreLayer(layerId, atIndex);
+    if (layer) {
+      // Select the restored layer
+      setSelectedLayerIndex(atIndex);
+    }
+  }, [keymap]);
+
+  // Handle unlock retry
+  const handleUnlockRetry = useCallback(() => {
+    keymap.clearUnlockRequired();
+    keymap.loadKeymapData();
+  }, [keymap]);
+
   return (
     <div className="p-6 h-full overflow-auto">
       <div className="max-w-6xl mx-auto">
@@ -22,101 +194,314 @@ export function KeymapPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="btn-ghost text-sm">Import</button>
-            <button className="btn-ghost text-sm">Export</button>
+
+          {/* Action Buttons */}
+          {connection.isConnected && keymap.keymap && (
+            <div className="flex items-center gap-2">
+              {keymap.hasUnsavedChanges && (
+                <span className="text-xs text-[var(--color-neon)] mr-2">
+                  ● Unsaved changes
+                </span>
+              )}
+              <button
+                className="btn-ghost text-sm flex items-center gap-1.5"
+                onClick={handleDiscard}
+                disabled={
+                  isDiscarding || !keymap.hasUnsavedChanges || keymap.isLoading
+                }
+              >
+                {isDiscarding ? (
+                  <IconLoader2 size={16} className="animate-spin" />
+                ) : (
+                  <IconRefresh size={16} />
+                )}
+                Reset All
+              </button>
+              <button
+                className="btn-electric text-sm flex items-center gap-1.5"
+                onClick={handleSave}
+                disabled={
+                  isSaving || !keymap.hasUnsavedChanges || keymap.isLoading
+                }
+              >
+                {isSaving ? (
+                  <IconLoader2 size={16} className="animate-spin" />
+                ) : (
+                  <IconDeviceFloppy size={16} />
+                )}
+                Save
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Not Connected State */}
+        {!connection.isConnected && (
+          <div className="glass-card p-6 text-center">
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Connect your keyboard to edit keymaps
+            </p>
           </div>
-        </div>
+        )}
 
-        {/* Layer Tabs Placeholder */}
-        <div className="flex gap-2 mb-6">
-          {["Base", "Lower", "Raise", "Adjust"].map((layer, index) => (
-            <button
-              key={layer}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                index === 0
-                  ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
-              }`}
-            >
-              {layer}
-            </button>
-          ))}
-        </div>
+        {/* Error State */}
+        {keymap.error && !keymap.unlockRequired && (
+          <div className="glass-card p-4 mb-4 border-red-500/20 bg-red-500/10 flex items-center gap-3">
+            <IconAlertCircle size={20} className="text-red-400" />
+            <p className="text-sm text-red-400">{keymap.error}</p>
+          </div>
+        )}
 
-        {/* Keyboard Layout Placeholder */}
-        <div className="glass-card p-8">
-          <div className="flex gap-8 justify-center">
-            {/* Left Half */}
-            <div className="flex flex-col gap-2">
-              {[0, 1, 2, 3].map((row) => (
-                <div key={row} className="flex gap-1.5">
-                  {[0, 1, 2, 3, 4, 5].map((col) => (
-                    <div
-                      key={col}
-                      className="w-12 h-12 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-xs text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5 cursor-pointer transition-colors"
-                    >
-                      {row === 0 && ["Esc", "1", "2", "3", "4", "5"][col]}
-                      {row === 1 && ["Tab", "Q", "W", "E", "R", "T"][col]}
-                      {row === 2 && ["Ctrl", "A", "S", "D", "F", "G"][col]}
-                      {row === 3 && ["Shift", "Z", "X", "C", "V", "B"][col]}
-                    </div>
-                  ))}
-                </div>
-              ))}
-              {/* Thumb Cluster */}
-              <div className="flex gap-1.5 justify-end mt-2">
-                {["Alt", "Cmd", "Space"].map((key) => (
-                  <div
-                    key={key}
-                    className="w-14 h-10 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-xs text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5 cursor-pointer transition-colors"
+        {/* Loading State */}
+        {connection.isConnected && keymap.isLoading && !keymap.keymap && (
+          <div className="glass-card p-6 text-center">
+            <IconLoader2
+              size={24}
+              className="animate-spin mx-auto mb-2 text-[var(--color-electric)]"
+            />
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Loading keymap data...
+            </p>
+          </div>
+        )}
+
+        {/* Main Content */}
+        {connection.isConnected && keymap.keymap && currentLayout && (
+          <>
+            {/* Layer Tabs */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="flex gap-2 flex-1 overflow-x-auto pb-2">
+                {keymap.keymap.layers.map((layer, index) => (
+                  <button
+                    key={layer.id}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                      index === selectedLayerIndex
+                        ? "bg-[var(--color-electric)]/20 text-[var(--color-electric)] border border-[var(--color-electric)]/30"
+                        : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+                    }`}
+                    onClick={() => setSelectedLayerIndex(index)}
                   >
-                    {key}
-                  </div>
+                    {layer.name || `Layer ${index}`}
+                  </button>
                 ))}
               </div>
+
+              {/* Layer Management Buttons */}
+              <Tooltip.Provider delayDuration={200}>
+                <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-2">
+                  {/* Layer Sorting Label */}
+                  <span className="text-xs text-[var(--color-text-muted)] mr-1">Sort:</span>
+                  
+                  {/* Move Up Button */}
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <button
+                        className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
+                        onClick={handleMoveLayerUp}
+                        disabled={selectedLayerIndex <= 0}
+                        aria-label="Move layer up (higher priority)"
+                      >
+                        <IconChevronUp
+                          size={16}
+                          className="text-[var(--color-text-muted)]"
+                        />
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
+                        sideOffset={5}
+                      >
+                        Move layer up (higher priority)
+                        <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                  
+                  {/* Move Down Button */}
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <button
+                        className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
+                        onClick={handleMoveLayerDown}
+                        disabled={
+                          selectedLayerIndex >= keymap.keymap.layers.length - 1
+                        }
+                        aria-label="Move layer down (lower priority)"
+                      >
+                        <IconChevronDown
+                          size={16}
+                          className="text-[var(--color-text-muted)]"
+                        />
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
+                        sideOffset={5}
+                      >
+                        Move layer down (lower priority)
+                        <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </div>
+
+                {/* Layer Add/Delete/Restore Buttons */}
+                <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-2">
+                  {/* Add Layer Button */}
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <button
+                        className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
+                        onClick={handleAddLayer}
+                        disabled={keymap.availableLayers <= keymap.keymap.layers.length}
+                        aria-label="Add new layer"
+                      >
+                        <IconPlus
+                          size={16}
+                          className="text-[var(--color-neon)]"
+                        />
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
+                        sideOffset={5}
+                      >
+                        Add new layer
+                        <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                  
+                  {/* Delete Layer Button */}
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <button
+                        className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
+                        onClick={handleDeleteLayer}
+                        disabled={keymap.keymap.layers.length <= 1}
+                        aria-label="Delete current layer"
+                      >
+                        <IconTrash
+                          size={16}
+                          className="text-red-400"
+                        />
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
+                        sideOffset={5}
+                      >
+                        Delete current layer
+                        <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                  
+                  {/* Restore Layer Button */}
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <button
+                        className="p-2 rounded-lg hover:bg-[var(--color-border)] disabled:opacity-30 disabled:cursor-not-allowed"
+                        onClick={handleRestoreLayer}
+                        disabled={keymap.removedLayerIds.length === 0}
+                        aria-label="Restore deleted layer"
+                      >
+                        <IconRestore
+                          size={16}
+                          className="text-[var(--color-electric)]"
+                        />
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="px-2 py-1 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50"
+                        sideOffset={5}
+                      >
+                        {keymap.removedLayerIds.length > 0 
+                          ? `Restore deleted layer (${keymap.removedLayerIds.length} available)`
+                          : "No deleted layers to restore"}
+                        <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </div>
+              </Tooltip.Provider>
             </div>
 
-            {/* Right Half */}
-            <div className="flex flex-col gap-2">
-              {[0, 1, 2, 3].map((row) => (
-                <div key={row} className="flex gap-1.5">
-                  {[0, 1, 2, 3, 4, 5].map((col) => (
-                    <div
-                      key={col}
-                      className="w-12 h-12 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-xs text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5 cursor-pointer transition-colors"
-                    >
-                      {row === 0 && ["6", "7", "8", "9", "0", "Del"][col]}
-                      {row === 1 && ["Y", "U", "I", "O", "P", "\\"][col]}
-                      {row === 2 && ["H", "J", "K", "L", ";", "'"][col]}
-                      {row === 3 && ["N", "M", ",", ".", "/", "Shift"][col]}
-                    </div>
-                  ))}
-                </div>
-              ))}
-              {/* Thumb Cluster */}
-              <div className="flex gap-1.5 mt-2">
-                {["Enter", "Bksp", "Layer"].map((key) => (
-                  <div
-                    key={key}
-                    className="w-14 h-10 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-xs text-[var(--color-text-muted)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5 cursor-pointer transition-colors"
+            {/* Physical Layout Selector (if multiple layouts) */}
+            {keymap.physicalLayouts &&
+              keymap.physicalLayouts.layouts.length > 1 && (
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-xs text-[var(--color-text-muted)]">
+                    Layout:
+                  </span>
+                  <select
+                    value={keymap.physicalLayouts.activeLayoutIndex}
+                    onChange={(e) =>
+                      keymap.setActiveLayout(Number(e.target.value))
+                    }
+                    className="px-2 py-1 rounded bg-[var(--color-surface)] border border-[var(--color-border)] text-sm text-[var(--color-text)]"
                   >
-                    {key}
-                  </div>
-                ))}
+                    {keymap.physicalLayouts.layouts.map((layout, index) => (
+                      <option key={index} value={index}>
+                        {layout.name || `Layout ${index + 1}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+            {/* Keyboard Layout */}
+            {currentLayer && (
+              <div className="glass-card p-8">
+                <KeyboardLayout
+                  layout={currentLayout}
+                  layer={currentLayer}
+                  behaviors={keymap.behaviors}
+                  selectedKey={selectedKeyPosition}
+                  onKeyClick={handleKeyClick}
+                  onKeyReset={handleKeyReset}
+                  isBindingModified={keymap.isBindingModified}
+                  getOriginalBinding={keymap.getOriginalBinding}
+                />
               </div>
-            </div>
-          </div>
-        </div>
+            )}
+          </>
+        )}
 
         {/* Info */}
         <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
           <p className="text-xs text-[var(--color-text-muted)]">
-            Connect your keyboard to edit keymaps. Click on a key to modify its
-            binding.
+            {connection.isConnected
+              ? "Click on a key to modify its binding. Modified keys are highlighted in green and show the original binding on hover. Use the Reset All button to discard all changes."
+              : "Connect your keyboard to edit keymaps. Click on a key to modify its binding."}
           </p>
         </div>
       </div>
+
+      {/* Keycode Selector Dialog */}
+      <KeycodeSelector
+        open={showKeycodeSelector}
+        onClose={() => {
+          setShowKeycodeSelector(false);
+          setSelectedKeyPosition(null);
+        }}
+        onSelect={handleBindingSelect}
+        currentBinding={currentBinding}
+        behaviors={keymap.behaviors}
+        layers={layersForSelector}
+      />
+
+      {/* Unlock Prompt */}
+      <UnlockPrompt
+        open={keymap.unlockRequired}
+        onClose={() => keymap.clearUnlockRequired()}
+        onRetry={handleUnlockRetry}
+      />
     </div>
   );
 }

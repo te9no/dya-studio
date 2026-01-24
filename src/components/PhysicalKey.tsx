@@ -1,0 +1,180 @@
+/**
+ * PhysicalKey Component
+ *
+ * Renders a single key in the physical keyboard layout.
+ * Supports positioning, rotation, sizing, and interactive states.
+ */
+import { useState, useMemo } from "react";
+import * as Tooltip from "@radix-ui/react-tooltip";
+import { IconRotateClockwise } from "@tabler/icons-react";
+import type { KeyPhysicalAttrs, BehaviorBinding } from "../hooks/useKeymap";
+
+// Base unit size for 1U key in pixels at scale 1.0
+const BASE_UNIT_SIZE = 54;
+
+interface PhysicalKeyProps {
+  /** Physical attributes of the key (position, size, rotation) */
+  attrs: KeyPhysicalAttrs;
+  /** Key position index in the layout */
+  keyPosition: number;
+  /** Current binding for this key */
+  binding?: BehaviorBinding;
+  /** Whether this key has been modified from original */
+  isModified: boolean;
+  /** Display name for the binding */
+  displayName: string;
+  /** Original display name (for tooltip when modified) */
+  originalDisplayName?: string;
+  /** Full binding description including params (for tooltip) */
+  bindingDescription?: string;
+  /** Whether this key is currently selected */
+  isSelected: boolean;
+  /** Callback when key is clicked */
+  onClick: () => void;
+  /** Callback to reset this key to original */
+  onReset: () => void;
+  /** Scale factor for responsive sizing */
+  scale?: number;
+}
+
+export function PhysicalKey({
+  attrs,
+  isModified,
+  displayName,
+  originalDisplayName,
+  bindingDescription,
+  isSelected,
+  onClick,
+  onReset,
+  scale = 1.0,
+}: PhysicalKeyProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Calculate dimensions and position with scale
+  // ZMK uses centimils (1/100 of a key unit) for dimensions
+  // Standard key unit is usually around 19.05mm = 1900 centimils
+  const style = useMemo(() => {
+    const unitSize = BASE_UNIT_SIZE * scale;
+    const width = (attrs.width / 100) * unitSize;
+    const height = (attrs.height / 100) * unitSize;
+    const x = (attrs.x / 100) * unitSize;
+    const y = (attrs.y / 100) * unitSize;
+
+    // Rotation: r is in centidegrees, rx and ry are rotation center
+    const rotation = attrs.r / 100;
+    const rotationCenterX = (attrs.rx / 100) * unitSize;
+    const rotationCenterY = (attrs.ry / 100) * unitSize;
+
+    return {
+      width: `${Math.max(width, 20)}px`,
+      height: `${Math.max(height, 20)}px`,
+      left: `${x}px`,
+      top: `${y}px`,
+      transform:
+        rotation !== 0
+          ? `rotate(${rotation}deg)`
+          : undefined,
+      transformOrigin:
+        rotation !== 0
+          ? `${rotationCenterX - x}px ${rotationCenterY - y}px`
+          : undefined,
+    };
+  }, [attrs, scale]);
+
+  // Calculate dynamic font size based on scale
+  const fontSize = useMemo(() => {
+    const baseSize = 12; // base font size in px
+    const scaledSize = baseSize * scale;
+    return Math.max(8, Math.min(14, scaledSize)); // clamp between 8px and 14px
+  }, [scale]);
+
+  // Key content
+  const keyContent = (
+    <div
+      className={`
+        absolute rounded-lg border cursor-pointer transition-all duration-150
+        flex flex-col items-center justify-center p-1.5 overflow-hidden
+        ${
+          isSelected
+            ? "bg-[var(--color-electric)]/20 border-[var(--color-electric)] shadow-[0_0_10px_rgba(0,212,255,0.3)]"
+            : isModified
+              ? "bg-[var(--color-neon)]/10 border-[var(--color-neon)]/50 hover:border-[var(--color-neon)]"
+              : "bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[var(--color-electric)]/50 hover:bg-[var(--color-electric)]/5"
+        }
+      `}
+      style={style}
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Display Name */}
+      <span
+        className={`
+          font-medium text-center leading-tight break-words line-clamp-2
+          ${
+            isModified
+              ? "text-[var(--color-neon)]"
+              : "text-[var(--color-text)]"
+          }
+        `}
+        style={{ fontSize: `${fontSize}px` }}
+        title={displayName}
+      >
+        {displayName || "—"}
+      </span>
+
+      {/* Modified indicator */}
+      {isModified && (
+        <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[var(--color-neon)]" />
+      )}
+
+      {/* Reset button on hover when modified */}
+      {isModified && isHovered && (
+        <button
+          className="absolute bottom-1 right-1 p-0.5 rounded bg-[var(--color-surface)]/80 hover:bg-[var(--color-surface)] border border-[var(--color-border)]"
+          onClick={(e) => {
+            e.stopPropagation();
+            onReset();
+          }}
+          title="Reset to original"
+        >
+          <IconRotateClockwise
+            size={12}
+            className="text-[var(--color-text-muted)]"
+          />
+        </button>
+      )}
+    </div>
+  );
+
+  // Always wrap with tooltip to show binding info
+  return (
+    <Tooltip.Provider delayDuration={200}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>{keyContent}</Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            className="px-3 py-2 rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] shadow-lg z-50 max-w-xs"
+            sideOffset={5}
+          >
+            <div className="space-y-1">
+              {/* Current binding info */}
+              <div>
+                <span className="text-[var(--color-text-muted)]">Current: </span>
+                <span className="font-medium">{bindingDescription || displayName}</span>
+              </div>
+              {/* Original binding info when modified */}
+              {isModified && originalDisplayName && (
+                <div>
+                  <span className="text-[var(--color-text-muted)]">Original: </span>
+                  <span>{originalDisplayName}</span>
+                </div>
+              )}
+            </div>
+            <Tooltip.Arrow className="fill-[var(--color-surface-elevated)]" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
+}
