@@ -58,7 +58,20 @@ export function KeycodeValueSelector({
   useEffect(() => {
     setSelectedModifiers(extractModifierFlags(value));
   }, [value]);
-
+  // Update selectedCategory when value changes or initially provided
+  useEffect(() => {
+    const baseCode = extractBaseKeycode(value);
+    const keycodes = KEYCODE_CATEGORY_ORDER.flatMap(getKeycodesByCategory);
+    const found = keycodes.find((k) => k.code === baseCode);
+    if (found && found.category !== selectedCategory) {
+      setSelectedCategory(found.category);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  // Focus the search input when the component is mounted (shown)
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
   const filteredKeycodes = useMemo((): KeycodeDefinition[] => {
     if (searchQuery.trim()) {
       return searchKeycodes(searchQuery);
@@ -146,8 +159,22 @@ export function KeycodeValueSelector({
             placeholder="Search keycodes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
+            className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+              onClick={() => {
+                setSearchQuery("");
+                searchInputRef.current?.focus();
+              }}
+              aria-label="Clear search"
+              tabIndex={0}
+            >
+              <IconX size={16} />
+            </button>
+          )}
         </div>
       </div>
 

@@ -5,7 +5,7 @@
  * Behavior-first approach: select behavior, then configure parameters.
  * Supports various parameter types with dedicated UI selectors.
  */
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { IconX } from "@tabler/icons-react";
 import {
@@ -164,6 +164,22 @@ export function KeycodeSelector({
   const [param2, setParam2] = useState<number>(0);
   const [activeParam, setActiveParam] = useState<1 | 2>(1);
 
+  // Initial values to detect changes
+  const initialValuesRef = useRef<{
+    behaviorId: number | null;
+    param1: number;
+    param2: number;
+  }>({ behaviorId: null, param1: 0, param2: 0 });
+
+  // Check if values have changed
+  const hasChanges = useMemo(() => {
+    return (
+      selectedBehavior !== initialValuesRef.current.behaviorId ||
+      param1 !== initialValuesRef.current.param1 ||
+      param2 !== initialValuesRef.current.param2
+    );
+  }, [selectedBehavior, param1, param2]);
+
   // Get selected behavior option
   const selectedBehaviorOption = useMemo((): BehaviorOption | null => {
     if (selectedBehavior === null) return null;
@@ -239,16 +255,13 @@ export function KeycodeSelector({
     setParam2(value);
   }, []);
 
-  // Handle apply
-  const handleApply = useCallback(() => {
-    if (selectedBehavior === null) return;
-    onSelect({
-      behaviorId: selectedBehavior,
-      param1,
-      param2,
-    });
-    onClose();
-  }, [selectedBehavior, param1, param2, onSelect, onClose]);
+  // Handle revert button click
+  const handleRevert = useCallback(() => {
+    setSelectedBehavior(initialValuesRef.current.behaviorId);
+    setParam1(initialValuesRef.current.param1);
+    setParam2(initialValuesRef.current.param2);
+    setActiveParam(1);
+  }, []);
 
   // Reset state when dialog opens
   const handleOpenChange = useCallback(
@@ -259,6 +272,12 @@ export function KeycodeSelector({
           setSelectedBehavior(currentBinding.behaviorId);
           setParam1(currentBinding.param1);
           setParam2(currentBinding.param2);
+          // Set initial values
+          initialValuesRef.current = {
+            behaviorId: currentBinding.behaviorId,
+            param1: currentBinding.param1,
+            param2: currentBinding.param2,
+          };
         } else {
           // Default to keypress behavior
           const kpMetadata = getBehaviorMetadata("kp");
@@ -268,6 +287,12 @@ export function KeycodeSelector({
             );
             if (kpBehavior) {
               setSelectedBehavior(kpBehavior.id);
+              // Set initial values
+              initialValuesRef.current = {
+                behaviorId: kpBehavior.id,
+                param1: 0,
+                param2: 0,
+              };
             }
           }
           setParam1(0);
@@ -275,10 +300,32 @@ export function KeycodeSelector({
         }
         setActiveParam(1);
       } else {
+        // Always apply changes when closing
+        if (selectedBehavior !== null) {
+          onSelect({
+            behaviorId: selectedBehavior,
+            param1,
+            param2,
+          });
+          // Update initial values to current values after applying
+          initialValuesRef.current = {
+            behaviorId: selectedBehavior,
+            param1,
+            param2,
+          };
+        }
         onClose();
       }
     },
-    [onClose, currentBinding, behaviors],
+    [
+      onClose,
+      currentBinding,
+      behaviors,
+      selectedBehavior,
+      param1,
+      param2,
+      onSelect,
+    ],
   );
 
   // Run handleOpenChange on mount if open is true
@@ -431,19 +478,21 @@ export function KeycodeSelector({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
         <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-4xl h-[85vh] bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-2xl z-50 flex flex-col overflow-hidden">
-          {/* Header with Apply Button */}
+          {/* Header with Cancel Button */}
           <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
-            <Dialog.Title className="text-lg font-medium text-[var(--color-text)]">
+            <Dialog.Title className="text-lg font-medium text-[var(--color-text)] flex items-center gap-2">
               Select Key Binding
             </Dialog.Title>
             <div className="flex items-center gap-2">
-              <button
-                className="btn-electric px-4 py-1.5 text-sm"
-                onClick={handleApply}
-                disabled={selectedBehavior === null}
-              >
-                Apply
-              </button>
+              {hasChanges && (
+                <button
+                  className="px-4 py-2 text-sm rounded-lg border border-red-400 text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                  onClick={handleRevert}
+                >
+                  <span className="w-2 h-2 bg-red-400 rounded-full mr-2 animate-pulse"></span>
+                  Revert change
+                </button>
+              )}
               <Dialog.Close asChild>
                 <button
                   className="p-2 rounded-lg hover:bg-[var(--color-border)] transition-colors"
