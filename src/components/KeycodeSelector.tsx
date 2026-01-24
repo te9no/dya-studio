@@ -123,7 +123,22 @@ function formatParamValue(
   layers: Array<{ id: number; name: string }>,
   behavior: BehaviorDefinition | null,
 ): string {
-  if (value === NO_PARAM_VALUE && paramType !== "layer") {
+  // For option-based paramTypes, 0 can be a valid value (e.g., BT_CLR)
+  // Only show "Not set" for paramTypes where 0 has no meaning
+  const optionBasedTypes = new Set<ParamType>([
+    "bt_command",
+    "out_command",
+    "mouse_keycode",
+    "mouse_movement",
+    "mouse_scroll",
+    "layer",
+  ]);
+
+  if (
+    value === NO_PARAM_VALUE &&
+    paramType &&
+    !optionBasedTypes.has(paramType)
+  ) {
     return "Not set";
   }
 
