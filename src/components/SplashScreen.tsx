@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { IconBluetooth, IconUsb } from "@tabler/icons-react";
+import { useMemo } from "react";
 import DyaLogo from "../assets/dya.svg?react";
 import type { ConnectionMethod } from "./DeviceConnection";
 
@@ -14,6 +15,9 @@ export function SplashScreen({
   isConnecting,
   error,
 }: SplashScreenProps) {
+  // Check if Web Serial API and Web Bluetooth API are available
+  const isSerialAvailable = useMemo(() => "serial" in navigator, []);
+  const isBLEAvailable = useMemo(() => "bluetooth" in navigator, []);
 
   return (
     <motion.div
@@ -86,29 +90,55 @@ export function SplashScreen({
           </p>
         </motion.div>
 
-        {/* Connection buttons */}
+        {/* Connection section */}
         <motion.div
-          className="flex gap-4 mt-8"
+          className="flex flex-col items-center gap-4 mt-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
         >
-          <button
-            onClick={() => onConnect("serial")}
-            disabled={isConnecting}
-            className="btn-electric flex items-center gap-2 px-6 py-3"
-          >
-            <IconUsb size={20} />
-            <span>Connect via USB</span>
-          </button>
-          <button
-            onClick={() => onConnect("ble")}
-            disabled={isConnecting}
-            className="btn-neon flex items-center gap-2 px-6 py-3"
-          >
-            <IconBluetooth size={20} />
-            <span>Connect via BLE</span>
-          </button>
+          {/* Connect label */}
+          <p className="text-sm font-light tracking-wider text-[var(--color-text-secondary)] uppercase">
+            Connect
+          </p>
+
+          {/* Connection buttons */}
+          <div className="flex gap-6">
+            <button
+              onClick={() => onConnect("serial")}
+              disabled={isConnecting || !isSerialAvailable}
+              className="w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-electric)] bg-[var(--color-electric)]/10 hover:bg-[var(--color-electric)]/20 hover:border-[var(--color-electric)] hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]"
+              aria-label="Connect via USB"
+              title={
+                isSerialAvailable
+                  ? "Connect via USB"
+                  : "Web Serial not available in this browser"
+              }
+            >
+              <IconUsb
+                size={28}
+                className="text-[var(--color-electric)]"
+                strokeWidth={1.5}
+              />
+            </button>
+            <button
+              onClick={() => onConnect("ble")}
+              disabled={isConnecting || !isBLEAvailable}
+              className="w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-neon)] bg-[var(--color-neon)]/10 hover:bg-[var(--color-neon)]/20 hover:border-[var(--color-neon)] hover:shadow-[0_0_20px_rgba(0,255,204,0.3)]"
+              aria-label="Connect via Bluetooth"
+              title={
+                isBLEAvailable
+                  ? "Connect via Bluetooth"
+                  : "Web Bluetooth not available in this browser"
+              }
+            >
+              <IconBluetooth
+                size={28}
+                className="text-[var(--color-neon)]"
+                strokeWidth={1.5}
+              />
+            </button>
+          </div>
         </motion.div>
 
         {/* Loading indicator */}
