@@ -10,6 +10,15 @@ interface SplashScreenProps {
   error: string | null;
 }
 
+// Slash line component for disabled state
+function DisabledSlash({ color }: { color: string }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className={`w-[70px] h-[2px] ${color} rotate-45 rounded-full`} />
+    </div>
+  );
+}
+
 export function SplashScreen({
   onConnect,
   isConnecting,
@@ -121,9 +130,7 @@ export function SplashScreen({
                 strokeWidth={1.5}
               />
               {(isConnecting || !isSerialAvailable) && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-[70px] h-[2px] bg-[var(--color-electric)] rotate-45 rounded-full" />
-                </div>
+                <DisabledSlash color="bg-[var(--color-electric)]" />
               )}
             </button>
             <button
@@ -143,9 +150,7 @@ export function SplashScreen({
                 strokeWidth={1.5}
               />
               {(isConnecting || !isBLEAvailable) && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-[70px] h-[2px] bg-[var(--color-neon)] rotate-45 rounded-full" />
-                </div>
+                <DisabledSlash color="bg-[var(--color-neon)]" />
               )}
             </button>
           </div>
