@@ -107,7 +107,7 @@ export function SplashScreen({
             <button
               onClick={() => onConnect("serial")}
               disabled={isConnecting || !isSerialAvailable}
-              className="w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-electric)] bg-[var(--color-electric)]/10 hover:bg-[var(--color-electric)]/20 hover:border-[var(--color-electric)] hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]"
+              className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-electric)] bg-[var(--color-electric)]/10 hover:bg-[var(--color-electric)]/20 hover:border-[var(--color-electric)] hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]"
               aria-label="Connect via USB"
               title={
                 isSerialAvailable
@@ -117,14 +117,19 @@ export function SplashScreen({
             >
               <IconUsb
                 size={28}
-                className="text-[var(--color-electric)]"
+                className="text-[var(--color-electric)] relative z-10"
                 strokeWidth={1.5}
               />
+              {(isConnecting || !isSerialAvailable) && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-[70px] h-[2px] bg-[var(--color-electric)] rotate-45 rounded-full" />
+                </div>
+              )}
             </button>
             <button
               onClick={() => onConnect("ble")}
               disabled={isConnecting || !isBLEAvailable}
-              className="w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-neon)] bg-[var(--color-neon)]/10 hover:bg-[var(--color-neon)]/20 hover:border-[var(--color-neon)] hover:shadow-[0_0_20px_rgba(0,255,204,0.3)]"
+              className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-neon)] bg-[var(--color-neon)]/10 hover:bg-[var(--color-neon)]/20 hover:border-[var(--color-neon)] hover:shadow-[0_0_20px_rgba(0,255,204,0.3)]"
               aria-label="Connect via Bluetooth"
               title={
                 isBLEAvailable
@@ -134,9 +139,14 @@ export function SplashScreen({
             >
               <IconBluetooth
                 size={28}
-                className="text-[var(--color-neon)]"
+                className="text-[var(--color-neon)] relative z-10"
                 strokeWidth={1.5}
               />
+              {(isConnecting || !isBLEAvailable) && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-[70px] h-[2px] bg-[var(--color-neon)] rotate-45 rounded-full" />
+                </div>
+              )}
             </button>
           </div>
         </motion.div>
