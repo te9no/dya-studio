@@ -15,11 +15,18 @@ interface ChartSegment {
   width: number; // Pre-calculated width
 }
 
+// Percentage of chart width allocated for restart gap visualization
+// 5% provides clear visual separation without excessive whitespace
+const RESTART_GAP = 5;
+
+// Timestamp threshold in seconds to detect keyboard restart
+// Timestamps less than 1 hour suggest the keyboard was recently restarted
+const ONE_HOUR_IN_SECONDS = 3600;
+
 // Detect timestamp resets (keyboard restarts) and calculate positions
 function detectRestarts(entries: BatteryHistoryEntryData[]): ChartSegment[] {
   if (entries.length === 0) return [];
 
-  const RESTART_GAP = 5; // Percentage of chart width for restart gap
   const allTimestamps = entries.map((e) => e.timestamp);
   const minTimestamp = Math.min(...allTimestamps);
   const maxTimestamp = Math.max(...allTimestamps);
@@ -34,7 +41,7 @@ function detectRestarts(entries: BatteryHistoryEntryData[]): ChartSegment[] {
     const currTimestamp = entries[i].timestamp;
 
     // Detect restart: timestamp goes backwards or resets to a very small value
-    const isRestart = currTimestamp < prevTimestamp || currTimestamp < 3600; // Less than 1 hour suggests reset
+    const isRestart = currTimestamp < prevTimestamp || currTimestamp < ONE_HOUR_IN_SECONDS;
 
     if (isRestart) {
       // Calculate and save current segment
