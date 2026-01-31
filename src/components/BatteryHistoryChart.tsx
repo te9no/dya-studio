@@ -1,95 +1,38 @@
 import { useMemo } from "react";
 import { IconRefresh } from "@tabler/icons-react";
-import type { BatteryHistoryEntryData } from "../hooks/useBatteryHistory";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
+} from "recharts";
+import type { DeviceBatteryHistory } from "../hooks/useBatteryHistory";
 
 interface BatteryHistoryChartProps {
-  entries: BatteryHistoryEntryData[];
-  deviceName: string;
-  color: string;
+  devices: DeviceBatteryHistory[];
+  deviceColors: string[];
 }
-
-interface ChartSegment {
-  entries: BatteryHistoryEntryData[];
-  isRestart: boolean;
-  startX: number; // Pre-calculated X position
-  width: number; // Pre-calculated width
-}
-
-// Percentage of chart width allocated for restart gap visualization
-// 5% provides clear visual separation without excessive whitespace
-const RESTART_GAP = 5;
 
 // Timestamp threshold in seconds to detect keyboard restart
 // Timestamps less than 1 hour suggest the keyboard was recently restarted
 const ONE_HOUR_IN_SECONDS = 3600;
 
-// Detect timestamp resets (keyboard restarts) and calculate positions
-function detectRestarts(entries: BatteryHistoryEntryData[]): ChartSegment[] {
-  if (entries.length === 0) return [];
-
-  const allTimestamps = entries.map((e) => e.timestamp);
-  const minTimestamp = Math.min(...allTimestamps);
-  const maxTimestamp = Math.max(...allTimestamps);
-  const timeRange = maxTimestamp - minTimestamp || 1;
-
-  const segments: ChartSegment[] = [];
-  let currentSegment: BatteryHistoryEntryData[] = [entries[0]];
-  let cumulativeX = 0;
-
-  for (let i = 1; i < entries.length; i++) {
-    const prevTimestamp = entries[i - 1].timestamp;
-    const currTimestamp = entries[i].timestamp;
-
-    // Detect restart: timestamp goes backwards or resets to a very small value
-    const isRestart = currTimestamp < prevTimestamp || currTimestamp < ONE_HOUR_IN_SECONDS;
-
-    if (isRestart) {
-      // Calculate and save current segment
-      const segmentMinTime = Math.min(...currentSegment.map((e) => e.timestamp));
-      const segmentMaxTime = Math.max(...currentSegment.map((e) => e.timestamp));
-      const segmentWidth = ((segmentMaxTime - segmentMinTime) / timeRange) * 100;
-      
-      segments.push({ 
-        entries: currentSegment, 
-        isRestart: false,
-        startX: cumulativeX,
-        width: segmentWidth
-      });
-      cumulativeX += segmentWidth;
-
-      // Add a restart marker
-      segments.push({ 
-        entries: [], 
-        isRestart: true,
-        startX: cumulativeX,
-        width: RESTART_GAP
-      });
-      cumulativeX += RESTART_GAP;
-
-      // Start new segment
-      currentSegment = [entries[i]];
-    } else {
-      currentSegment.push(entries[i]);
-    }
-  }
-
-  // Add final segment
-  if (currentSegment.length > 0) {
-    const segmentMinTime = Math.min(...currentSegment.map((e) => e.timestamp));
-    const segmentMaxTime = Math.max(...currentSegment.map((e) => e.timestamp));
-    const segmentWidth = ((segmentMaxTime - segmentMinTime) / timeRange) * 100;
-    
-    segments.push({ 
-      entries: currentSegment, 
-      isRestart: false,
-      startX: cumulativeX,
-      width: segmentWidth
-    });
-  }
-
-  return segments;
+interface ChartDataPoint {
+  timestamp: number;
+  timeLabel: string;
+  [key: string]: number | string | null; // Dynamic device keys
 }
 
+interface RestartMarker {
+  timestamp: number;
+}
+
+// Format timestamp for display
 function formatTimestamp(timestamp: number): string {
   const hours = Math.floor(timestamp / 3600);
   const minutes = Math.floor((timestamp % 3600) / 60);
@@ -100,16 +43,85 @@ function formatTimestamp(timestamp: number): string {
   return `${minutes}m`;
 }
 
-export function BatteryHistoryChart({
-  entries,
-  deviceName,
-  color,
-}: BatteryHistoryChartProps) {
-  const segments = useMemo(() => detectRestarts(entries), [entries]);
+// Detect restart markers across all devices
+function detectRestarts(devices: DeviceBatteryHistory[]): RestartMarker[] {
+  const restarts: RestartMarker[] = [];
+  const seenTimestamps = new Set<number>();
 
-  if (entries.length === 0) {
+  devices.forEach((device) => {
+    for (let i = 1; i < device.entries.length; i++) {
+      const prevTimestamp = device.entries[i - 1].timestamp;
+      const currTimestamp = device.entries[i].timestamp;
+
+      // Detect restart: timestamp goes backwards or resets to a very small value
+      const isRestart = currTimestamp < prevTimestamp || currTimestamp < ONE_HOUR_IN_SECONDS;
+
+      if (isRestart && !seenTimestamps.has(currTimestamp)) {
+        restarts.push({ timestamp: currTimestamp });
+        seenTimestamps.add(currTimestamp);
+      }
+    }
+  });
+
+  return restarts.sort((a, b) => a.timestamp - b.timestamp);
+}
+
+// Combine all device data into a unified timeline
+function combineDeviceData(devices: DeviceBatteryHistory[]): ChartDataPoint[] {
+  // Collect all unique timestamps
+  const timestampSet = new Set<number>();
+  devices.forEach((device) => {
+    device.entries.forEach((entry) => {
+      timestampSet.add(entry.timestamp);
+    });
+  });
+
+  const sortedTimestamps = Array.from(timestampSet).sort((a, b) => a - b);
+
+  // Create data points with all device values
+  return sortedTimestamps.map((timestamp) => {
+    const dataPoint: ChartDataPoint = {
+      timestamp,
+      timeLabel: formatTimestamp(timestamp),
+    };
+
+    devices.forEach((device) => {
+      const entry = device.entries.find((e) => e.timestamp === timestamp);
+      dataPoint[device.deviceName] = entry ? entry.batteryLevel : null;
+    });
+
+    return dataPoint;
+  });
+}
+
+// Custom tooltip component
+function CustomTooltip({ active, payload, label }: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; color: string }>;
+  label?: string;
+}) {
+  if (active && payload && payload.length) {
     return (
-      <div className="h-48 flex items-center justify-center border border-dashed border-[var(--color-border)] rounded-lg">
+      <div className="glass-card p-3 border border-[var(--color-border)]">
+        <p className="text-xs font-medium text-[var(--color-text)] mb-2">{label}</p>
+        {payload.map((entry, index) => (
+          <p key={index} className="text-xs text-[var(--color-text-secondary)]">
+            <span style={{ color: entry.color }}>●</span> {entry.name}: {entry.value}%
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+}
+
+export function BatteryHistoryChart({ devices, deviceColors }: BatteryHistoryChartProps) {
+  const chartData = useMemo(() => combineDeviceData(devices), [devices]);
+  const restartMarkers = useMemo(() => detectRestarts(devices), [devices]);
+
+  if (devices.length === 0 || chartData.length === 0) {
+    return (
+      <div className="h-96 flex items-center justify-center border border-dashed border-[var(--color-border)] rounded-lg">
         <span className="text-[var(--color-text-muted)] text-sm">
           No battery history available
         </span>
@@ -117,180 +129,95 @@ export function BatteryHistoryChart({
     );
   }
 
-  // Chart dimensions
-  const height = 192; // pixels
-  const padding = { top: 20, right: 20, bottom: 30, left: 40 };
-  const chartHeight = height - padding.top - padding.bottom;
-
-  // Find min/max values
-  const allTimestamps = entries.map((e) => e.timestamp);
-  const minTimestamp = Math.min(...allTimestamps);
-  const maxTimestamp = Math.max(...allTimestamps);
-
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-[var(--color-text-secondary)]">
-          {deviceName}
+          Battery Level Over Time
         </h3>
         <span className="text-xs text-[var(--color-text-muted)]">
-          {entries.length} entries
+          {chartData.length} data points
         </span>
       </div>
 
-      <div className="relative" style={{ height: `${height}px` }}>
-        <svg
-          viewBox={`0 0 600 ${height}`}
-          className="w-full h-full"
-          preserveAspectRatio="none"
+      <ResponsiveContainer width="100%" height={400}>
+        <LineChart
+          data={chartData}
+          margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
         >
-          {/* Y-axis labels */}
-          <g className="text-[var(--color-text-muted)]" fontSize="10">
-            {[0, 25, 50, 75, 100].map((level) => {
-              const y = padding.top + chartHeight - (level / 100) * chartHeight;
-              return (
-                <g key={level}>
-                  <text x={padding.left - 8} y={y} textAnchor="end" dominantBaseline="middle">
-                    {level}%
-                  </text>
-                  <line
-                    x1={padding.left}
-                    y1={y}
-                    x2={600 - padding.right}
-                    y2={y}
-                    stroke="var(--color-border)"
-                    strokeWidth="0.5"
-                    strokeDasharray="2,2"
-                  />
-                </g>
-              );
-            })}
-          </g>
-
-          {/* Render segments */}
-          {segments.map((segment, segIndex) => {
-            if (segment.isRestart) {
-              // Restart marker
-              const x = padding.left + (segment.startX / 100) * (600 - padding.left - padding.right);
-
-              return (
-                <g key={`restart-${segIndex}`}>
-                  <line
-                    x1={x}
-                    y1={padding.top}
-                    x2={x}
-                    y2={height - padding.bottom}
-                    stroke="var(--color-text-muted)"
-                    strokeWidth="1"
-                    strokeDasharray="4,4"
-                  />
-                  <g transform={`translate(${x}, ${padding.top - 5})`}>
-                    <circle r="8" fill="var(--color-bg)" stroke="var(--color-border)" />
-                    <text
-                      fontSize="10"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill="var(--color-text-muted)"
-                    >
-                      ⟲
-                    </text>
-                  </g>
-                </g>
-              );
-            }
-
-            // Data segment
-            const segmentEntries = segment.entries;
-            if (segmentEntries.length === 0) return null;
-
-            const segmentMinTime = Math.min(...segmentEntries.map((e) => e.timestamp));
-            const segmentMaxTime = Math.max(...segmentEntries.map((e) => e.timestamp));
-            const segmentTimeRange = segmentMaxTime - segmentMinTime || 1;
-
-            const points = segmentEntries
-              .map((entry) => {
-                const x =
-                  padding.left +
-                  (segment.startX / 100) * (600 - padding.left - padding.right) +
-                  ((entry.timestamp - segmentMinTime) / segmentTimeRange) *
-                    (segment.width / 100) *
-                    (600 - padding.left - padding.right);
-                const y =
-                  padding.top + chartHeight - (entry.batteryLevel / 100) * chartHeight;
-                return `${x},${y}`;
-              })
-              .join(" ");
-
-            return (
-              <g key={`segment-${segIndex}`}>
-                <polyline
-                  points={points}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-                {/* Add dots for each point */}
-                {segmentEntries.map((entry, pointIndex) => {
-                  const x =
-                    padding.left +
-                    (segment.startX / 100) * (600 - padding.left - padding.right) +
-                    ((entry.timestamp - segmentMinTime) / segmentTimeRange) *
-                      (segment.width / 100) *
-                      (600 - padding.left - padding.right);
-                  const y =
-                    padding.top + chartHeight - (entry.batteryLevel / 100) * chartHeight;
-                  return (
-                    <circle
-                      key={pointIndex}
-                      cx={x}
-                      cy={y}
-                      r="2"
-                      fill={color}
-                    />
-                  );
-                })}
-              </g>
-            );
-          })}
-
-          {/* X-axis */}
-          <line
-            x1={padding.left}
-            y1={height - padding.bottom}
-            x2={600 - padding.right}
-            y2={height - padding.bottom}
+          <CartesianGrid
+            strokeDasharray="3 3"
             stroke="var(--color-border)"
-            strokeWidth="1"
+            opacity={0.3}
           />
-
-          {/* Y-axis */}
-          <line
-            x1={padding.left}
-            y1={padding.top}
-            x2={padding.left}
-            y2={height - padding.bottom}
-            stroke="var(--color-border)"
-            strokeWidth="1"
+          <XAxis
+            dataKey="timeLabel"
+            stroke="var(--color-text-muted)"
+            tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
+            tickLine={{ stroke: "var(--color-border)" }}
           />
-        </svg>
+          <YAxis
+            stroke="var(--color-text-muted)"
+            tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
+            tickLine={{ stroke: "var(--color-border)" }}
+            domain={[0, 100]}
+            label={{
+              value: "Battery %",
+              angle: -90,
+              position: "insideLeft",
+              style: { fill: "var(--color-text-muted)", fontSize: 12 },
+            }}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend
+            wrapperStyle={{
+              paddingTop: "20px",
+              fontSize: "12px",
+              color: "var(--color-text-secondary)",
+            }}
+          />
+          
+          {/* Restart markers */}
+          {restartMarkers.map((marker, index) => (
+            <ReferenceLine
+              key={`restart-${index}`}
+              x={formatTimestamp(marker.timestamp)}
+              stroke="var(--color-text-muted)"
+              strokeDasharray="4 4"
+              strokeWidth={1}
+              label={{
+                value: "⟲",
+                position: "top",
+                fill: "var(--color-text-muted)",
+                fontSize: 16,
+              }}
+            />
+          ))}
 
-        {/* Time range label */}
-        <div className="absolute bottom-0 left-0 right-0 flex justify-center">
-          <span className="text-xs text-[var(--color-text-muted)]">
-            {formatTimestamp(minTimestamp)} — {formatTimestamp(maxTimestamp)}
-          </span>
-        </div>
-      </div>
+          {/* Lines for each device */}
+          {devices.map((device, index) => (
+            <Line
+              key={device.sourceId}
+              type="monotone"
+              dataKey={device.deviceName}
+              stroke={deviceColors[index % deviceColors.length]}
+              strokeWidth={2}
+              dot={{ fill: deviceColors[index % deviceColors.length], r: 3 }}
+              activeDot={{ r: 5 }}
+              connectNulls={false}
+            />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
 
       {/* Legend for restarts */}
-      {segments.some((s) => s.isRestart) && (
-        <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+      {restartMarkers.length > 0 && (
+        <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] mt-2">
           <IconRefresh size={14} />
-          <span>Dashed line indicates keyboard restart</span>
+          <span>Dashed lines with ⟲ indicate keyboard restarts</span>
         </div>
       )}
     </div>
   );
 }
+

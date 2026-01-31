@@ -111,7 +111,7 @@ export function BatteryPage() {
           )}
         </div>
 
-        {/* Battery History Charts */}
+        {/* Battery History Chart */}
         <div className="glass-card p-6">
           <h2 className="text-sm font-medium text-[var(--color-text-secondary)] mb-4">
             Battery History
@@ -130,16 +130,7 @@ export function BatteryPage() {
               </span>
             </div>
           ) : (
-            <div className="space-y-8">
-              {devices.map((device, index) => (
-                <BatteryHistoryChart
-                  key={device.sourceId}
-                  entries={device.entries}
-                  deviceName={device.deviceName}
-                  color={deviceColors[index % deviceColors.length]}
-                />
-              ))}
-            </div>
+            <BatteryHistoryChart devices={devices} deviceColors={deviceColors} />
           )}
         </div>
 
