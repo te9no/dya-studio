@@ -10,6 +10,9 @@ import {
 // Subsystem identifier for ZMK settings RPC
 const SUBSYSTEM_IDENTIFIER = "zmk__settings";
 
+// Time to wait for all notifications to arrive after requesting settings
+const NOTIFICATION_COLLECTION_TIMEOUT_MS = 500;
+
 export interface DeviceActivitySettings {
   sourceId: number;
   deviceName: string;
@@ -114,8 +117,8 @@ export function useSettings(): UseSettingsReturn {
           // Note: The actual data comes via notifications, not the response
         }
       } finally {
-        // Wait a bit for all notifications to arrive
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Wait for all notifications to arrive from devices
+        await new Promise((resolve) => setTimeout(resolve, NOTIFICATION_COLLECTION_TIMEOUT_MS));
         unsubscribe();
       }
     } catch (err) {
@@ -173,7 +176,7 @@ export function useSettings(): UseSettingsReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [zmkApp?.state.connection, subsystemIndex, loadAllSettings]);
+  }, [zmkApp, subsystemIndex, loadAllSettings]);
 
   const resetToDefaults = useCallback(async () => {
     // Reset to ZMK default values:

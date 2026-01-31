@@ -14,6 +14,10 @@ function formatMs(ms: number): string {
 function parseTimeString(value: string): number {
   if (value === "0") return 0;
   const num = parseInt(value);
+  
+  // Validate that parseInt succeeded
+  if (isNaN(num)) return 0;
+  
   if (value.endsWith("s")) return num * 1000;
   if (value.endsWith("m")) return num * 60000;
   if (value.endsWith("h")) return num * 3600000;
