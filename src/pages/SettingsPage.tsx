@@ -12,7 +12,7 @@ function formatMs(ms: number): string {
 
 // Convert milliseconds to minutes
 function msToMinutes(ms: number): number {
-  return Math.round(ms / 60000);
+  return ms / 60000;
 }
 
 // Convert minutes to milliseconds
@@ -86,14 +86,17 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-40"
             onClick={() => {
               setIsOpen(false);
               setShowCustomInput(false);
               setCustomInput("");
             }}
           />
-          <div className="absolute right-0 mt-1 w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-20 py-1">
+          <div 
+            className="absolute right-0 mt-1 w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-50 py-1"
+            onClick={(e) => e.stopPropagation()}
+          >
             {presets.map((preset) => (
               <button
                 key={preset.value}
