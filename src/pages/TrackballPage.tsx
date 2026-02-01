@@ -25,29 +25,32 @@ const ROTATION_OPTIONS = [
 const AUTO_SAVE_DELAY_MS = 1000;
 
 export function TrackballPage() {
-  const { processors, isLoading, error, setScaling, setRotation } = useRuntimeInputProcessor();
-  
+  const { processors, isLoading, error, setScaling, setRotation } =
+    useRuntimeInputProcessor();
+
   // Selected processor index
   const [selectedProcessorIndex, setSelectedProcessorIndex] = useState(0);
-  
+
   // Local state for pending changes (before auto-save)
   const [pendingSpeed, setPendingSpeed] = useState<number | null>(null);
   const [pendingRotation, setPendingRotation] = useState<number | null>(null);
-  
+
   // Save status visualization
-  const [saveStatus, setSaveStatus] = useState<"idle" | "pending" | "saving" | "saved">("idle");
-  
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "pending" | "saving" | "saved"
+  >("idle");
+
   // Debounce timer refs
-  const speedTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const rotationTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const saveStatusTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+  const speedTimerRef = useRef<number | null>(null);
+  const rotationTimerRef = useRef<number | null>(null);
+  const saveStatusTimerRef = useRef<number | null>(null);
+
   // Track previous processor to detect changes
   const previousProcessorRef = useRef<string | null>(null);
 
   // Get the selected processor
   const processor = processors[selectedProcessorIndex] || null;
-  
+
   // Reset pending state when processor changes (derived state pattern)
   const currentProcessorName = processor?.name || null;
   if (previousProcessorRef.current !== currentProcessorName) {
@@ -65,7 +68,10 @@ export function TrackballPage() {
 
   // Use pending speed if available, otherwise use current speed
   const displaySpeed = pendingSpeed !== null ? pendingSpeed : currentSpeed;
-  const displayRotation = pendingRotation !== null ? pendingRotation : (processor?.rotationDegrees || 0);
+  const displayRotation =
+    pendingRotation !== null
+      ? pendingRotation
+      : processor?.rotationDegrees || 0;
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -79,15 +85,15 @@ export function TrackballPage() {
   // Auto-save speed with debouncing
   const handleSpeedChange = (speedPercent: number) => {
     if (!processor) return;
-    
+
     setPendingSpeed(speedPercent);
     setSaveStatus("pending");
-    
+
     // Clear existing timer
     if (speedTimerRef.current) {
       clearTimeout(speedTimerRef.current);
     }
-    
+
     // Set new timer for auto-save
     speedTimerRef.current = setTimeout(async () => {
       setSaveStatus("saving");
@@ -95,7 +101,7 @@ export function TrackballPage() {
       await setScaling(processor.name, speedPercent, 100);
       setPendingSpeed(null);
       setSaveStatus("saved");
-      
+
       // Clear "saved" status after 2 seconds
       if (saveStatusTimerRef.current) clearTimeout(saveStatusTimerRef.current);
       saveStatusTimerRef.current = setTimeout(() => {
@@ -107,22 +113,22 @@ export function TrackballPage() {
   // Auto-save rotation with debouncing
   const handleRotationChange = (degrees: number) => {
     if (!processor) return;
-    
+
     setPendingRotation(degrees);
     setSaveStatus("pending");
-    
+
     // Clear existing timer
     if (rotationTimerRef.current) {
       clearTimeout(rotationTimerRef.current);
     }
-    
+
     // Set new timer for auto-save
     rotationTimerRef.current = setTimeout(async () => {
       setSaveStatus("saving");
       await setRotation(processor.name, degrees);
       setPendingRotation(null);
       setSaveStatus("saved");
-      
+
       // Clear "saved" status after 2 seconds
       if (saveStatusTimerRef.current) clearTimeout(saveStatusTimerRef.current);
       saveStatusTimerRef.current = setTimeout(() => {
@@ -146,7 +152,7 @@ export function TrackballPage() {
         setRotation(processor.name, pendingRotation);
       }
     }
-    
+
     setSelectedProcessorIndex(index);
   };
 
@@ -188,7 +194,8 @@ export function TrackballPage() {
         {!isLoading && !processor && !error && (
           <div className="mb-6 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
             <p className="text-sm text-[var(--color-text-muted)]">
-              No runtime input processor found. Make sure your firmware has the runtime input processor module enabled.
+              No runtime input processor found. Make sure your firmware has the
+              runtime input processor module enabled.
             </p>
           </div>
         )}
@@ -222,7 +229,9 @@ export function TrackballPage() {
                   Active Processor
                 </p>
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  {processors.length > 1 ? "Selected processor" : "Detected from device"}
+                  {processors.length > 1
+                    ? "Selected processor"
+                    : "Detected from device"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -267,7 +276,7 @@ export function TrackballPage() {
                   {(displaySpeed / 100).toFixed(1)}x
                 </span>
               </div>
-              
+
               {/* Slider for continuous adjustment */}
               <div className="mb-4">
                 <input
@@ -299,7 +308,7 @@ export function TrackballPage() {
                   <span>5.0x</span>
                 </div>
               </div>
-              
+
               {/* Preset buttons */}
               <ButtonListSelector
                 options={SPEED_OPTIONS}
@@ -324,7 +333,7 @@ export function TrackballPage() {
                   {displayRotation}°
                 </span>
               </div>
-              
+
               {/* Slider for continuous adjustment */}
               <div className="mb-4">
                 <input
@@ -356,7 +365,7 @@ export function TrackballPage() {
                   <span>359°</span>
                 </div>
               </div>
-              
+
               {/* Preset buttons */}
               <ButtonListSelector
                 options={ROTATION_OPTIONS}
@@ -392,8 +401,9 @@ export function TrackballPage() {
         {/* Info */}
         <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
           <p className="text-xs text-[var(--color-text-muted)]">
-            Runtime input processor allows you to adjust trackball sensitivity and rotation without rebuilding firmware. 
-            Changes are automatically saved to the device after 1 second and persist across reboots.
+            Runtime input processor allows you to adjust trackball sensitivity
+            and rotation without rebuilding firmware. Changes are automatically
+            saved to the device after 1 second and persist across reboots.
           </p>
         </div>
       </div>
