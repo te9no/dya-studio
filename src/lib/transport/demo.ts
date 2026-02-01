@@ -1,6 +1,6 @@
 /**
  * Demo RPC Transport
- * 
+ *
  * Simulates a ZMK keyboard connection for testing without a physical device.
  * Supports core, keymap, behaviors, and custom subsystems (BLE, Settings).
  */
@@ -9,8 +9,14 @@ import type { RpcTransport } from "@zmkfirmware/zmk-studio-ts-client/transport/i
 import { Request, Response } from "@zmkfirmware/zmk-studio-ts-client";
 import { BLEManagementHandler, BLE_MANAGEMENT_IDENTIFIER } from "./demo-ble";
 import { SettingsHandler, SETTINGS_IDENTIFIER } from "./demo-settings";
-import { Request as BLERequest, Response as BLEResponse } from "../../proto/zmk/ble_management/ble_management";
-import { Request as SettingsRequest, Response as SettingsResponse } from "../../proto/zmk/settings/core";
+import {
+  Request as BLERequest,
+  Response as BLEResponse,
+} from "../../proto/zmk/ble_management/ble_management";
+import {
+  Request as SettingsRequest,
+  Response as SettingsResponse,
+} from "../../proto/zmk/settings/core";
 
 // Framing protocol
 const SOF = 0xab;
@@ -21,27 +27,46 @@ const ESC = 0xac;
  * Demo keyboard data
  */
 const DEMO = {
-  device: { 
-    name: "DYA Keyboard (Demo)", 
-    serialNumber: new Uint8Array([0x44, 0x59, 0x41, 0x44, 0x45, 0x4d, 0x4f]) // "DYADEMO"
+  device: {
+    name: "DYA Keyboard (Demo)",
+    serialNumber: new Uint8Array([0x44, 0x59, 0x41, 0x44, 0x45, 0x4d, 0x4f]), // "DYADEMO"
   },
   layouts: {
     activeLayoutIndex: 0,
-    layouts: [{
-      name: "Default",
-      keys: Array(42).fill(0).map((_, i) => ({
-        width: 100, height: 100,
-        x: (i >= 21 ? 750 : 0) + (i % 21 % 6) * 110,
-        y: Math.floor((i % 21) / 6) * 110,
-        r: 0, rx: 0, ry: 0
-      }))
-    }]
+    layouts: [
+      {
+        name: "Default",
+        keys: Array(42)
+          .fill(0)
+          .map((_, i) => ({
+            width: 100,
+            height: 100,
+            x: (i >= 21 ? 750 : 0) + ((i % 21) % 6) * 110,
+            y: Math.floor((i % 21) / 6) * 110,
+            r: 0,
+            rx: 0,
+            ry: 0,
+          })),
+      },
+    ],
   },
   keymap: {
     layers: [
-      { id: 0, name: "Base", bindings: Array(42).fill({ behaviorId: 1, param1: 0x04, param2: 0 }) },
-      { id: 1, name: "Lower", bindings: Array(42).fill({ behaviorId: 2, param1: 0, param2: 0 }) },
-      { id: 2, name: "Raise", bindings: Array(42).fill({ behaviorId: 2, param1: 0, param2: 0 }) },
+      {
+        id: 0,
+        name: "Base",
+        bindings: Array(42).fill({ behaviorId: 1, param1: 0x04, param2: 0 }),
+      },
+      {
+        id: 1,
+        name: "Lower",
+        bindings: Array(42).fill({ behaviorId: 2, param1: 0, param2: 0 }),
+      },
+      {
+        id: 2,
+        name: "Raise",
+        bindings: Array(42).fill({ behaviorId: 2, param1: 0, param2: 0 }),
+      },
     ],
     availableLayers: 8,
     maxLayerNameLength: 32,
@@ -77,18 +102,26 @@ class Keyboard {
   private km = JSON.parse(JSON.stringify(DEMO.keymap));
   private dirty = false;
   private orig = JSON.parse(JSON.stringify(DEMO.keymap));
-  
+
   // Custom subsystem handlers
   private bleHandler = new BLEManagementHandler();
   private settingsHandler = new SettingsHandler();
-  
+
   // Custom subsystems registry
   private readonly BLE_SUBSYSTEM_INDEX = 0;
   private readonly SETTINGS_SUBSYSTEM_INDEX = 1;
-  
+
   private customSubsystems = [
-    { index: this.BLE_SUBSYSTEM_INDEX, identifier: BLE_MANAGEMENT_IDENTIFIER },
-    { index: this.SETTINGS_SUBSYSTEM_INDEX, identifier: SETTINGS_IDENTIFIER },
+    {
+      index: this.BLE_SUBSYSTEM_INDEX,
+      identifier: BLE_MANAGEMENT_IDENTIFIER,
+      uiUrl: [],
+    },
+    {
+      index: this.SETTINGS_SUBSYSTEM_INDEX,
+      identifier: SETTINGS_IDENTIFIER,
+      uiUrl: [],
+    },
   ];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,7 +139,9 @@ class Keyboard {
       rr.keymap = { checkUnsavedChanges: this.dirty };
     } else if (req.keymap?.setLayerBinding) {
       const { layerId, keyPosition, binding } = req.keymap.setLayerBinding;
-      const layer = this.km.layers.find((l: { id: number }) => l.id === layerId);
+      const layer = this.km.layers.find(
+        (l: { id: number }) => l.id === layerId,
+      );
       if (layer && keyPosition >= 0 && keyPosition < 42) {
         layer.bindings[keyPosition] = binding;
         this.dirty = true;
@@ -125,7 +160,9 @@ class Keyboard {
     } else if (req.behaviors?.listAllBehaviors) {
       rr.behaviors = { listAllBehaviors: { behaviors: [1, 2, 3, 4] } };
     } else if (req.behaviors?.getBehaviorDetails) {
-      const b = DEMO.behaviors.find(x => x.id === req.behaviors.getBehaviorDetails.behaviorId);
+      const b = DEMO.behaviors.find(
+        (x) => x.id === req.behaviors.getBehaviorDetails.behaviorId,
+      );
       rr.behaviors = { getBehaviorDetails: b || DEMO.behaviors[0] };
     } else if (req.custom?.listCustomSubsystems) {
       rr.custom = {
@@ -223,7 +260,7 @@ export async function connect(): Promise<RpcTransport> {
       } catch (e) {
         console.error("Demo error:", e);
       }
-    }
+    },
   });
 
   return {
