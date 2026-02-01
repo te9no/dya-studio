@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package zmk.runtime_input_processor;
+
+// Information about a single input processor
+message ProcessorInfo {
+    // Processor name (max 16 characters, short for BLE efficiency)
+    string name = 1;
+    // Current scale multiplier (for speed adjustment)
+    int32 scale_multiplier = 2;
+    // Current scale divisor (for speed adjustment)
+    int32 scale_divisor = 3;
+    // Current rotation in degrees
+    int32 rotation_degrees = 4;
+}
+
+// Request to list all available input processors
+message ListProcessorsRequest {}
+
+message ListProcessorsResponse {
+    repeated ProcessorInfo processors = 1;
+}
+
+// Request to get settings for a specific processor
+message GetProcessorRequest {
+    string name = 1;
+}
+
+message GetProcessorResponse {
+    ProcessorInfo processor = 1;
+}
+
+// Request to update scaling settings
+message SetScalingRequest {
+    string name = 1;
+    int32 scale_multiplier = 2;
+    int32 scale_divisor = 3;
+}
+
+message SetScalingResponse {
+    bool success = 1;
+}
+
+// Request to update rotation settings
+message SetRotationRequest {
+    string name = 1;
+    int32 rotation_degrees = 2;
+}
+
+message SetRotationResponse {
+    bool success = 1;
+}
+
+// Main request message
+message Request {
+    oneof request_type {
+        ListProcessorsRequest list_processors = 1;
+        GetProcessorRequest get_processor = 2;
+        SetScalingRequest set_scaling = 3;
+        SetRotationRequest set_rotation = 4;
+    }
+}
+
+// Error response
+message ErrorResponse {
+    string message = 1;
+}
+
+// Main response message
+message Response {
+    oneof response_type {
+        ErrorResponse error = 1;
+        ListProcessorsResponse list_processors = 2;
+        GetProcessorResponse get_processor = 3;
+        SetScalingResponse set_scaling = 4;
+        SetRotationResponse set_rotation = 5;
+    }
+}
+
+// Notification when processor settings change
+message ProcessorSettingsNotification {
+    ProcessorInfo processor = 1;
+}
+
+// Notification wrapper
+message Notification {
+    oneof notification_type {
+        ProcessorSettingsNotification processor_settings = 1;
+    }
+}
