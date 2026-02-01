@@ -16,7 +16,10 @@ const ESC = 0xac;
  * Demo keyboard data
  */
 const DEMO = {
-  device: { name: "DYA Keyboard (Demo)", version: "1.0.0" },
+  device: { 
+    name: "DYA Keyboard (Demo)", 
+    serialNumber: new Uint8Array([0x44, 0x59, 0x41, 0x44, 0x45, 0x4d, 0x4f]) // "DYADEMO"
+  },
   layouts: {
     activeLayoutIndex: 0,
     layouts: [{
@@ -72,42 +75,43 @@ class Keyboard {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   process(req: any): any {
-    const r = { requestId: req.requestId, requestResponse: {} };
+    // Response structure: { requestResponse: { requestId, core/keymap/behaviors } }
+    const rr: Record<string, unknown> = { requestId: req.requestId };
 
     if (req.core?.getDeviceInfo) {
-      r.requestResponse = { core: { getDeviceInfo: DEMO.device } };
+      rr.core = { getDeviceInfo: DEMO.device };
     } else if (req.keymap?.getPhysicalLayouts) {
-      r.requestResponse = { keymap: { getPhysicalLayouts: DEMO.layouts } };
+      rr.keymap = { getPhysicalLayouts: DEMO.layouts };
     } else if (req.keymap?.getKeymap) {
-      r.requestResponse = { keymap: { getKeymap: this.km } };
+      rr.keymap = { getKeymap: this.km };
     } else if (req.keymap?.checkUnsavedChanges !== undefined) {
-      r.requestResponse = { keymap: { checkUnsavedChanges: this.dirty } };
+      rr.keymap = { checkUnsavedChanges: this.dirty };
     } else if (req.keymap?.setLayerBinding) {
       const { layerId, keyPosition, binding } = req.keymap.setLayerBinding;
       const layer = this.km.layers.find((l: { id: number }) => l.id === layerId);
       if (layer && keyPosition >= 0 && keyPosition < 42) {
         layer.bindings[keyPosition] = binding;
         this.dirty = true;
-        r.requestResponse = { keymap: { setLayerBinding: 0 } };
+        rr.keymap = { setLayerBinding: 0 };
       } else {
-        r.requestResponse = { keymap: { setLayerBinding: 1 } };
+        rr.keymap = { setLayerBinding: 1 };
       }
     } else if (req.keymap?.saveChanges !== undefined) {
       this.orig = JSON.parse(JSON.stringify(this.km));
       this.dirty = false;
-      r.requestResponse = { keymap: { saveChanges: { ok: {} } } };
+      rr.keymap = { saveChanges: { ok: {} } };
     } else if (req.keymap?.discardChanges !== undefined) {
       this.km = JSON.parse(JSON.stringify(this.orig));
       this.dirty = false;
-      r.requestResponse = { keymap: { discardChanges: true } };
+      rr.keymap = { discardChanges: true };
     } else if (req.behaviors?.listAllBehaviors) {
-      r.requestResponse = { behaviors: { listAllBehaviors: { behaviors: [1, 2, 3, 4] } } };
+      rr.behaviors = { listAllBehaviors: { behaviors: [1, 2, 3, 4] } };
     } else if (req.behaviors?.getBehaviorDetails) {
       const b = DEMO.behaviors.find(x => x.id === req.behaviors.getBehaviorDetails.behaviorId);
-      r.requestResponse = { behaviors: { getBehaviorDetails: b || DEMO.behaviors[0] } };
+      rr.behaviors = { getBehaviorDetails: b || DEMO.behaviors[0] };
     }
 
-    return r;
+    return { requestResponse: rr };
   }
 }
 
