@@ -245,11 +245,13 @@ export function SettingsPage() {
   const handleIdleChange = (ms: number) => {
     setHasEdits(true);
     setEditedIdleTimeout(ms);
+    setEditedSleepTimeout(sleepTimeout); // Keep sleep timeout unchanged
   };
 
   const handleSleepChange = (ms: number) => {
     setHasEdits(true);
     setEditedSleepTimeout(ms);
+    setEditedIdleTimeout(idleTimeout); // Keep idle timeout unchanged
   };
 
   const handleSaveSettings = async () => {
