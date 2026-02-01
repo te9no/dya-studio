@@ -41,9 +41,22 @@ export function TrackballPage() {
   const speedTimerRef = useRef<NodeJS.Timeout | null>(null);
   const rotationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const saveStatusTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Track previous processor to detect changes
+  const previousProcessorRef = useRef<string | null>(null);
 
   // Get the selected processor
   const processor = processors[selectedProcessorIndex] || null;
+  
+  // Reset pending state when processor changes (derived state pattern)
+  const currentProcessorName = processor?.name || null;
+  if (previousProcessorRef.current !== currentProcessorName) {
+    previousProcessorRef.current = currentProcessorName;
+    // Reset pending states and status when processor changes
+    if (pendingSpeed !== null) setPendingSpeed(null);
+    if (pendingRotation !== null) setPendingRotation(null);
+    if (saveStatus !== "idle") setSaveStatus("idle");
+  }
 
   // Calculate current speed as percentage (multiplier/divisor * 100)
   const currentSpeed = processor
@@ -53,13 +66,6 @@ export function TrackballPage() {
   // Use pending speed if available, otherwise use current speed
   const displaySpeed = pendingSpeed !== null ? pendingSpeed : currentSpeed;
   const displayRotation = pendingRotation !== null ? pendingRotation : (processor?.rotationDegrees || 0);
-
-  // Reset pending state when processor changes
-  useEffect(() => {
-    setPendingSpeed(null);
-    setPendingRotation(null);
-    setSaveStatus("idle");
-  }, [selectedProcessorIndex, processors]);
 
   // Cleanup timers on unmount
   useEffect(() => {

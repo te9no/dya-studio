@@ -1,7 +1,7 @@
 /**
  * Tests for TrackballPage component
  */
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TrackballPage } from "../TrackballPage";
 import { useRuntimeInputProcessor } from "../../hooks/useRuntimeInputProcessor";
@@ -152,7 +152,8 @@ describe("TrackballPage", () => {
   });
 
   it("should call setScaling when speed button is clicked", async () => {
-    const user = userEvent.setup();
+    jest.useFakeTimers();
+    const user = userEvent.setup({ delay: null });
     const mockSetScaling = jest.fn();
 
     mockUseRuntimeInputProcessor.mockReturnValue({
@@ -181,11 +182,19 @@ describe("TrackballPage", () => {
       await user.click(speedButton.parentElement);
     }
 
+    // Fast-forward time to trigger debounced auto-save (1000ms)
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
     expect(mockSetScaling).toHaveBeenCalledWith("trackpad", 200, 100);
+    
+    jest.useRealTimers();
   });
 
   it("should call setRotation when rotation button is clicked", async () => {
-    const user = userEvent.setup();
+    jest.useFakeTimers();
+    const user = userEvent.setup({ delay: null });
     const mockSetRotation = jest.fn();
 
     mockUseRuntimeInputProcessor.mockReturnValue({
@@ -214,7 +223,14 @@ describe("TrackballPage", () => {
       await user.click(rotationButton.parentElement);
     }
 
+    // Fast-forward time to trigger debounced auto-save (1000ms)
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
     expect(mockSetRotation).toHaveBeenCalledWith("trackpad", 90);
+    
+    jest.useRealTimers();
   });
 
   it("should display current configuration details", () => {
