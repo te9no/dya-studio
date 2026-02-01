@@ -1,5 +1,10 @@
-import { useState, useMemo } from "react";
-import { IconSettings, IconAlertTriangle, IconChevronDown } from "@tabler/icons-react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import {
+  IconSettings,
+  IconAlertTriangle,
+  IconChevronDown,
+} from "@tabler/icons-react";
 import { useSettings } from "../hooks/useSettings";
 
 // Helper to format milliseconds to human readable
@@ -51,10 +56,25 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [customInput, setCustomInput] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const valueInMinutes = msToMinutes(value);
   const matchingPreset = presets.find((p) => p.value === valueInMinutes);
   const displayText = matchingPreset?.label || `${valueInMinutes} min`;
+
+  // Update dropdown position when opened
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      // Align dropdown to the right edge of the button
+      // Dropdown width is 192px (w-48)
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.right - 192, // 192px = w-48
+      });
+    }
+  }, [isOpen]);
 
   const handlePresetSelect = (minutes: number) => {
     onChange(minutesToMs(minutes));
@@ -75,6 +95,7 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         type="button"
         className="input-field w-40 text-sm flex items-center justify-between"
         onClick={() => setIsOpen(!isOpen)}
@@ -86,83 +107,92 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[9998]"
             onClick={() => {
               setIsOpen(false);
               setShowCustomInput(false);
               setCustomInput("");
             }}
           />
-          <div 
-            className="absolute right-0 mt-1 w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-50 py-1"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {presets.map((preset) => (
-              <button
-                key={preset.value}
-                type="button"
-                className={`w-full px-4 py-2 text-left text-sm hover:bg-[var(--color-border)] transition-colors ${
-                  preset.value === valueInMinutes
-                    ? "text-[var(--color-electric)]"
-                    : "text-[var(--color-text-secondary)]"
-                }`}
-                onClick={() => handlePresetSelect(preset.value)}
-              >
-                {preset.label}
-              </button>
-            ))}
-            <div className="border-t border-[var(--color-border)] mt-1 pt-1">
-              {!showCustomInput ? (
+          {createPortal(
+            <div
+              className="fixed w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg z-[9999] py-1"
+              style={{
+                top: `${dropdownPosition.top}px`,
+                left: `${dropdownPosition.left}px`,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {presets.map((preset) => (
                 <button
+                  key={preset.value}
                   type="button"
-                  className="w-full px-4 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
-                  onClick={() => setShowCustomInput(true)}
+                  className={`w-full px-4 py-2 text-left text-sm hover:bg-[var(--color-border)] transition-colors ${
+                    preset.value === valueInMinutes
+                      ? "text-[var(--color-electric)]"
+                      : "text-[var(--color-text-secondary)]"
+                  }`}
+                  onClick={() => handlePresetSelect(preset.value)}
                 >
-                  Custom value...
+                  {preset.label}
                 </button>
-              ) : (
-                <div className="px-4 py-2 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      className="input-field w-20 text-sm text-center"
-                      placeholder="0"
-                      value={customInput}
-                      onChange={(e) => setCustomInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleCustomSubmit();
-                        }
-                      }}
-                      autoFocus
-                    />
-                    <span className="text-xs text-[var(--color-text-muted)]">min</span>
+              ))}
+              <div className="border-t border-[var(--color-border)] mt-1 pt-1">
+                {!showCustomInput ? (
+                  <button
+                    type="button"
+                    className="w-full px-4 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
+                    onClick={() => setShowCustomInput(true)}
+                  >
+                    Custom value...
+                  </button>
+                ) : (
+                  <div className="px-4 py-2 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        className="input-field w-20 text-sm text-center"
+                        placeholder="0"
+                        value={customInput}
+                        onChange={(e) => setCustomInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleCustomSubmit();
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <span className="text-xs text-[var(--color-text-muted)]">
+                        min
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="flex-1 px-2 py-1 text-xs rounded bg-[var(--color-electric)] text-[var(--color-bg)] hover:bg-[var(--color-electric)]/80"
+                        onClick={handleCustomSubmit}
+                      >
+                        Set
+                      </button>
+                      <button
+                        type="button"
+                        className="flex-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+                        onClick={() => {
+                          setShowCustomInput(false);
+                          setCustomInput("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className="flex-1 px-2 py-1 text-xs rounded bg-[var(--color-electric)] text-[var(--color-bg)] hover:bg-[var(--color-electric)]/80"
-                      onClick={handleCustomSubmit}
-                    >
-                      Set
-                    </button>
-                    <button
-                      type="button"
-                      className="flex-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
-                      onClick={() => {
-                        setShowCustomInput(false);
-                        setCustomInput("");
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+                )}
+              </div>
+            </div>,
+            document.body,
+          )}
         </>
       )}
     </div>
@@ -170,9 +200,10 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
 }
 
 export function SettingsPage() {
-  const { devices, isLoading, error, setActivitySettings, resetToDefaults } = useSettings();
+  const { devices, isLoading, error, setActivitySettings, resetToDefaults } =
+    useSettings();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  
+
   // Track if user has edited the form
   const [hasEdits, setHasEdits] = useState(false);
   const [editedIdleTimeout, setEditedIdleTimeout] = useState<number>(0);
@@ -181,12 +212,16 @@ export function SettingsPage() {
   // Get central device settings (source 0)
   const centralSettings = useMemo(
     () => devices.find((d) => d.sourceId === 0),
-    [devices]
+    [devices],
   );
 
   // Display values: use edited values if user has made changes, otherwise use central settings
-  const idleTimeout = hasEdits ? editedIdleTimeout : (centralSettings?.idleMs ?? 0);
-  const sleepTimeout = hasEdits ? editedSleepTimeout : (centralSettings?.sleepMs ?? 0);
+  const idleTimeout = hasEdits
+    ? editedIdleTimeout
+    : (centralSettings?.idleMs ?? 0);
+  const sleepTimeout = hasEdits
+    ? editedSleepTimeout
+    : (centralSettings?.sleepMs ?? 0);
 
   const handleIdleChange = (ms: number) => {
     setHasEdits(true);
@@ -378,8 +413,8 @@ export function SettingsPage() {
         <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
           <p className="text-xs text-[var(--color-text-muted)]">
             Connect your keyboard to modify settings. Changes apply to all
-            devices (central + peripherals). Individual device settings are shown
-            for reference only.
+            devices (central + peripherals). Individual device settings are
+            shown for reference only.
           </p>
         </div>
       </div>
