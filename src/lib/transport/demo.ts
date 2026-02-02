@@ -13,6 +13,7 @@ import {
 } from "@zmkfirmware/zmk-studio-ts-client";
 import { BLEManagementHandler, BLE_MANAGEMENT_IDENTIFIER } from "./demo-ble";
 import { SettingsHandler, SETTINGS_IDENTIFIER } from "./demo-settings";
+import { BatteryHistoryHandler, BATTERY_HISTORY_IDENTIFIER } from "./demo-battery";
 import {
   Request as BLERequest,
   Response as BLEResponse,
@@ -21,6 +22,10 @@ import {
   Request as SettingsRequest,
   Response as SettingsResponse,
 } from "../../proto/zmk/settings/core";
+import {
+  Request as BatteryHistoryRequest,
+  Response as BatteryHistoryResponse,
+} from "../../proto/zmk/battery_history/battery_history";
 import { ANSI60, ORTHO, CORNE6 } from "../layouts";
 import { ErrorConditions } from "@zmkfirmware/zmk-studio-ts-client/meta";
 
@@ -97,10 +102,12 @@ class Keyboard {
   // Custom subsystem handlers
   private bleHandler = new BLEManagementHandler();
   private settingsHandler = new SettingsHandler();
+  private batteryHistoryHandler = new BatteryHistoryHandler();
 
   // Custom subsystems registry
   private readonly BLE_SUBSYSTEM_INDEX = 0;
   private readonly SETTINGS_SUBSYSTEM_INDEX = 1;
+  private readonly BATTERY_HISTORY_SUBSYSTEM_INDEX = 2;
 
   private customSubsystems = [
     {
@@ -111,6 +118,11 @@ class Keyboard {
     {
       index: this.SETTINGS_SUBSYSTEM_INDEX,
       identifier: SETTINGS_IDENTIFIER,
+      uiUrl: [],
+    },
+    {
+      index: this.BATTERY_HISTORY_SUBSYSTEM_INDEX,
+      identifier: BATTERY_HISTORY_IDENTIFIER,
       uiUrl: [],
     },
   ];
@@ -190,6 +202,15 @@ class Keyboard {
         } catch (e) {
           console.error("Settings subsystem error:", e);
         }
+      } else if (subsystemIndex === this.BATTERY_HISTORY_SUBSYSTEM_INDEX) {
+        // Battery History
+        try {
+          const batteryReq = BatteryHistoryRequest.decode(data);
+          const batteryResp = this.batteryHistoryHandler.process(batteryReq);
+          responseData = BatteryHistoryResponse.encode(batteryResp).finish();
+        } catch (e) {
+          console.error("Battery History subsystem error:", e);
+        }
       }
 
       if (responseData) {
@@ -222,6 +243,21 @@ class Keyboard {
             custom: {
               customNotification: {
                 subsystemIndex: this.SETTINGS_SUBSYSTEM_INDEX,
+                payload: payload,
+              },
+            },
+          },
+        }).finish(),
+      );
+    });
+
+    this.batteryHistoryHandler.notify((payload: Uint8Array) => {
+      callback(
+        Response.encode({
+          notification: {
+            custom: {
+              customNotification: {
+                subsystemIndex: this.BATTERY_HISTORY_SUBSYSTEM_INDEX,
                 payload: payload,
               },
             },
