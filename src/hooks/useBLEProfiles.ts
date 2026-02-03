@@ -309,13 +309,14 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
     [zmkApp?.state.connection, subsystemIndex, getOutputPriority]
   );
 
-  // Load profiles when connection or subsystem changes
+  // Load profiles and output priority when connection or subsystem changes
   useEffect(() => {
     if (subsystemIndex !== undefined && zmkApp?.state.connection) {
       loadProfiles();
       getOutputPriority();
     }
-  }, [subsystemIndex, zmkApp?.state.connection, loadProfiles, getOutputPriority]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subsystemIndex, zmkApp?.state.connection]);
 
   return {
     profiles,

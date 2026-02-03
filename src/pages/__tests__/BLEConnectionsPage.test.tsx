@@ -283,11 +283,8 @@ describe("BLEConnectionsPage", () => {
         { profiles: mockProfiles, loadProfiles: mockLoadProfiles },
       );
 
-      // Get all refresh buttons and click the profiles refresh button (it has text "Refresh")
-      const refreshButtons = screen.getAllByRole("button", { name: /refresh/i });
-      const profilesRefreshButton = refreshButtons.find(btn => btn.textContent === "Refresh");
-      expect(profilesRefreshButton).toBeDefined();
-      fireEvent.click(profilesRefreshButton!);
+      const refreshButton = screen.getByRole("button", { name: "Refresh profiles" });
+      fireEvent.click(refreshButton);
 
       await waitFor(() => {
         expect(mockLoadProfiles).toHaveBeenCalledTimes(1);

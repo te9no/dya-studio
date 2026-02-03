@@ -339,6 +339,7 @@ export function BLEConnectionsPage() {
                   className="btn-ghost text-sm"
                   onClick={loadProfiles}
                   disabled={isLoading}
+                  aria-label="Refresh profiles"
                 >
                   Refresh
                 </button>
