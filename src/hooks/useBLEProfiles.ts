@@ -3,6 +3,7 @@ import { ZMKCustomSubsystem, ZMKAppContext } from "@cormoran/zmk-studio-react-ho
 import {
   Request,
   Response,
+  OutputPriority,
 } from "../proto/zmk/ble_management/ble_management";
 
 // Subsystem identifier for ZMK BLE management custom protocol
@@ -23,10 +24,13 @@ export interface UseBLEProfilesReturn {
   maxProfiles: number;
   isLoading: boolean;
   error: string | null;
+  outputPriority: OutputPriority | null;
   loadProfiles: () => Promise<void>;
   switchProfile: (index: number) => Promise<void>;
   unpairProfile: (index: number) => Promise<void>;
   setProfileName: (index: number, name: string) => Promise<void>;
+  getOutputPriority: () => Promise<void>;
+  setOutputPriority: (priority: OutputPriority) => Promise<void>;
 }
 
 export function useBLEProfiles(): UseBLEProfilesReturn {
@@ -35,6 +39,7 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
   const [maxProfiles, setMaxProfiles] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [outputPriority, setOutputPriorityState] = useState<OutputPriority | null>(null);
 
   // Memoize subsystem to avoid unnecessary re-renders
   const subsystem = useMemo(
@@ -226,17 +231,21 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
   useEffect(() => {
     if (subsystemIndex !== undefined && zmkApp?.state.connection) {
       loadProfiles();
+      getOutputPriority();
     }
-  }, [subsystemIndex, zmkApp?.state.connection, loadProfiles]);
+  }, [subsystemIndex, zmkApp?.state.connection, loadProfiles, getOutputPriority]);
 
   return {
     profiles,
     maxProfiles,
     isLoading,
     error,
+    outputPriority,
     loadProfiles,
     switchProfile,
     unpairProfile,
     setProfileName,
+    getOutputPriority,
+    setOutputPriority,
   };
 }
