@@ -21,7 +21,7 @@ export interface ProcessorInfo {
   scaleDivisor: number;
   /** Current rotation in degrees */
   rotationDegrees: number;
-  /** Auto-mouse layer settings */
+  /** Temporary layer settings */
   tempLayerEnabled: boolean;
   tempLayerLayer: number;
   tempLayerActivationDelayMs: number;

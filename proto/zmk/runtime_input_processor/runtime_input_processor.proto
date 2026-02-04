@@ -14,7 +14,7 @@ message ProcessorInfo {
     uint32 scale_divisor = 4;
     // Current rotation in degrees
     int32 rotation_degrees = 5;
-    // Auto-mouse layer settings
+    // Temporary layer settings
     bool temp_layer_enabled = 6;
     uint32 temp_layer_layer = 7;
     uint32 temp_layer_activation_delay_ms = 8;
