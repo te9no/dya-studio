@@ -8,6 +8,7 @@ import {
   Response,
   Notification,
   ProcessorInfo,
+  LayerInfo,
 } from "../proto/zmk/runtime_input_processor/runtime_input_processor";
 
 // Subsystem identifier for ZMK runtime input processor custom protocol
@@ -52,13 +53,21 @@ export interface InputProcessor {
   tempLayerLayer: number;
   tempLayerActivationDelayMs: number;
   tempLayerDeactivationDelayMs: number;
+  activeLayers: number[]; // Empty = active on all layers
+}
+
+export interface LayerInformation {
+  id: number;
+  name: string;
 }
 
 export interface UseRuntimeInputProcessorReturn {
   processors: InputProcessor[];
+  layers: LayerInformation[];
   isLoading: boolean;
   error: string | null;
   loadProcessors: () => Promise<void>;
+  loadLayers: () => Promise<void>;
   setScaling: (
     id: number,
     multiplier: number,
@@ -69,11 +78,13 @@ export interface UseRuntimeInputProcessorReturn {
   setTempLayerLayer: (id: number, layer: number) => Promise<void>;
   setTempLayerActivationDelay: (id: number, delayMs: number) => Promise<void>;
   setTempLayerDeactivationDelay: (id: number, delayMs: number) => Promise<void>;
+  setActiveLayers: (id: number, layers: number[]) => Promise<void>;
 }
 
 export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
   const zmkApp = useContext(ZMKAppContext);
   const [processors, setProcessors] = useState<InputProcessor[]>([]);
+  const [layers, setLayers] = useState<LayerInformation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,6 +131,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
               processorInfo.tempLayerActivationDelayMs,
             tempLayerDeactivationDelayMs:
               processorInfo.tempLayerDeactivationDelayMs,
+            activeLayers: processorInfo.activeLayers || [],
           });
 
           // Update state with all collected processors
@@ -468,23 +480,119 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
     [zmkApp?.state.connection, subsystemIndex, loadProcessors],
   );
 
-  // Load processors when connection or subsystem changes
+  const setActiveLayers = useCallback(
+    async (id: number, layers: number[]) => {
+      if (!zmkApp?.state.connection || subsystemIndex === undefined) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystemIndex,
+        );
+
+        const request = Request.create({
+          setActiveLayers: {
+            id,
+            layers,
+          },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+          if (resp.error) {
+            setError(resp.error.message);
+            return;
+          }
+        }
+
+        await loadProcessors();
+      } catch (err) {
+        console.error("Failed to set active layers:", err);
+        setError(
+          `Failed to set active layers: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [zmkApp?.state.connection, subsystemIndex, loadProcessors],
+  );
+
+  const loadLayers = useCallback(async () => {
+    if (!zmkApp?.state.connection || subsystemIndex === undefined) {
+      setError("Not connected to device or subsystem not found");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const service = new ZMKCustomSubsystem(
+        zmkApp.state.connection,
+        subsystemIndex,
+      );
+
+      const request = Request.create({
+        getLayerInfo: {},
+      });
+
+      const payload = Request.encode(request).finish();
+      const responsePayload = await service.callRPC(payload);
+
+      if (responsePayload) {
+        const resp = Response.decode(responsePayload);
+        if (resp.error) {
+          setError(resp.error.message);
+          return;
+        }
+        if (resp.getLayerInfo?.layers) {
+          const layerInfos: LayerInformation[] = resp.getLayerInfo.layers.map(
+            (layer: LayerInfo) => ({
+              id: layer.id,
+              name: layer.name,
+            }),
+          );
+          setLayers(layerInfos);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load layers:", err);
+      setError(
+        `Failed to load layers: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [zmkApp, subsystemIndex]);
+
+  // Load processors and layers when connection or subsystem changes
   useEffect(() => {
     if (subsystemIndex !== undefined && zmkApp?.state.connection) {
       loadProcessors();
+      loadLayers();
     }
-  }, [subsystemIndex, zmkApp?.state.connection, loadProcessors]);
+  }, [subsystemIndex, zmkApp?.state.connection, loadProcessors, loadLayers]);
 
   return {
     processors,
+    layers,
     isLoading,
     error,
     loadProcessors,
+    loadLayers,
     setScaling,
     setRotation,
     setTempLayerEnabled,
     setTempLayerLayer,
     setTempLayerActivationDelay,
     setTempLayerDeactivationDelay,
+    setActiveLayers,
   };
 }

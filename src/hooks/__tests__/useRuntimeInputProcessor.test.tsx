@@ -167,6 +167,7 @@ describe("useRuntimeInputProcessor", () => {
               tempLayerLayer: 0,
               tempLayerActivationDelayMs: 100,
               tempLayerDeactivationDelayMs: 500,
+              activeLayers: [],
             },
           },
         });
@@ -189,6 +190,7 @@ describe("useRuntimeInputProcessor", () => {
         tempLayerLayer: 0,
         tempLayerActivationDelayMs: 100,
         tempLayerDeactivationDelayMs: 500,
+        activeLayers: [],
       });
       expect(result.current.error).toBe(null);
     });
@@ -290,6 +292,7 @@ describe("useRuntimeInputProcessor", () => {
                 tempLayerLayer: 0,
                 tempLayerActivationDelayMs: 100,
                 tempLayerDeactivationDelayMs: 500,
+                activeLayers: [],
               },
             },
           });
@@ -317,6 +320,7 @@ describe("useRuntimeInputProcessor", () => {
                 tempLayerLayer: 0,
                 tempLayerActivationDelayMs: 100,
                 tempLayerDeactivationDelayMs: 500,
+                activeLayers: [],
               },
             },
           });
@@ -395,6 +399,7 @@ describe("useRuntimeInputProcessor", () => {
                 tempLayerLayer: 0,
                 tempLayerActivationDelayMs: 100,
                 tempLayerDeactivationDelayMs: 500,
+                activeLayers: [],
               },
             },
           });
@@ -422,6 +427,7 @@ describe("useRuntimeInputProcessor", () => {
                 tempLayerLayer: 0,
                 tempLayerActivationDelayMs: 100,
                 tempLayerDeactivationDelayMs: 500,
+                activeLayers: [],
               },
             },
           });

@@ -31,21 +31,25 @@ const createMockProcessor = (overrides = {}) => ({
   tempLayerLayer: 0,
   tempLayerActivationDelayMs: 100,
   tempLayerDeactivationDelayMs: 500,
+  activeLayers: [],
   ...overrides,
 });
 
 // Helper to create default runtime input processor hook return value
 const createMockHookReturn = (overrides = {}) => ({
   processors: [],
+  layers: [],
   isLoading: false,
   error: null,
   loadProcessors: jest.fn(),
+  loadLayers: jest.fn(),
   setScaling: jest.fn(),
   setRotation: jest.fn(),
   setTempLayerEnabled: jest.fn(),
   setTempLayerLayer: jest.fn(),
   setTempLayerActivationDelay: jest.fn(),
   setTempLayerDeactivationDelay: jest.fn(),
+  setActiveLayers: jest.fn(),
   ...overrides,
 });
 

@@ -28,7 +28,18 @@ const MOCK_PROCESSORS: ProcessorInfo[] = [
     tempLayerLayer: 0,
     tempLayerActivationDelayMs: 100,
     tempLayerDeactivationDelayMs: 500,
+    activeLayers: [], // Empty = active on all layers
   },
+];
+
+/**
+ * Mock layer information
+ */
+const MOCK_LAYERS = [
+  { id: 0, name: "Default" },
+  { id: 1, name: "Lower" },
+  { id: 2, name: "Raise" },
+  { id: 3, name: "Adjust" },
 ];
 
 /**
@@ -259,6 +270,37 @@ export class RuntimeInputProcessorHandler {
       }
 
       return { error: { message: `Processor not found: ${id}` } };
+    }
+
+    if (request.setActiveLayers !== undefined) {
+      const { id, layers } = request.setActiveLayers;
+      const processor = this.processors.find((p) => p.id === id);
+
+      if (processor) {
+        processor.activeLayers = layers;
+
+        // Send notification about the update
+        setTimeout(() => {
+          console.log("Demo sending updated processor settings:", processor);
+          this.callbacks.forEach((cb) => {
+            cb(
+              Notification.encode({
+                processorChanged: {
+                  processor,
+                },
+              }).finish(),
+            );
+          });
+        }, 50);
+
+        return { setActiveLayers: {} };
+      }
+
+      return { error: { message: `Processor not found: ${id}` } };
+    }
+
+    if (request.getLayerInfo !== undefined) {
+      return { getLayerInfo: { layers: MOCK_LAYERS } };
     }
 
     return { error: { message: "Not implemented" } };

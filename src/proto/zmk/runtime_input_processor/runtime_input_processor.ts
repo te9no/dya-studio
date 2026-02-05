@@ -26,6 +26,16 @@ export interface ProcessorInfo {
   tempLayerLayer: number;
   tempLayerActivationDelayMs: number;
   tempLayerDeactivationDelayMs: number;
+  /** Active layers (list of layer IDs on which this processor is active, empty = all layers) */
+  activeLayers: number[];
+}
+
+/** Information about a keyboard layer */
+export interface LayerInfo {
+  /** Layer ID (index) */
+  id: number;
+  /** Layer display name */
+  name: string;
 }
 
 /** Request to list all available input processors */
@@ -115,6 +125,23 @@ export interface SetTempLayerDeactivationDelayRequest {
 export interface SetTempLayerDeactivationDelayResponse {
 }
 
+/** Request to set active layers for a processor */
+export interface SetActiveLayersRequest {
+  id: number;
+  layers: number[];
+}
+
+export interface SetActiveLayersResponse {
+}
+
+/** Request to get layer information */
+export interface GetLayerInfoRequest {
+}
+
+export interface GetLayerInfoResponse {
+  layers: LayerInfo[];
+}
+
 /** Main request message */
 export interface Request {
   listProcessors?: ListProcessorsRequest | undefined;
@@ -127,6 +154,8 @@ export interface Request {
   setTempLayerLayer?: SetTempLayerLayerRequest | undefined;
   setTempLayerActivationDelay?: SetTempLayerActivationDelayRequest | undefined;
   setTempLayerDeactivationDelay?: SetTempLayerDeactivationDelayRequest | undefined;
+  setActiveLayers?: SetActiveLayersRequest | undefined;
+  getLayerInfo?: GetLayerInfoRequest | undefined;
 }
 
 /** Error response */
@@ -147,6 +176,8 @@ export interface Response {
   setTempLayerLayer?: SetTempLayerLayerResponse | undefined;
   setTempLayerActivationDelay?: SetTempLayerActivationDelayResponse | undefined;
   setTempLayerDeactivationDelay?: SetTempLayerDeactivationDelayResponse | undefined;
+  setActiveLayers?: SetActiveLayersResponse | undefined;
+  getLayerInfo?: GetLayerInfoResponse | undefined;
 }
 
 /** Notification when processor settings change */
@@ -170,6 +201,7 @@ function createBaseProcessorInfo(): ProcessorInfo {
     tempLayerLayer: 0,
     tempLayerActivationDelayMs: 0,
     tempLayerDeactivationDelayMs: 0,
+    activeLayers: [],
   };
 }
 
@@ -202,6 +234,11 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
     if (message.tempLayerDeactivationDelayMs !== 0) {
       writer.uint32(72).uint32(message.tempLayerDeactivationDelayMs);
     }
+    writer.uint32(82).fork();
+    for (const v of message.activeLayers) {
+      writer.uint32(v);
+    }
+    writer.join();
     return writer;
   },
 
@@ -284,6 +321,24 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
           message.tempLayerDeactivationDelayMs = reader.uint32();
           continue;
         }
+        case 10: {
+          if (tag === 80) {
+            message.activeLayers.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 82) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.activeLayers.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -307,6 +362,65 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
     message.tempLayerLayer = object.tempLayerLayer ?? 0;
     message.tempLayerActivationDelayMs = object.tempLayerActivationDelayMs ?? 0;
     message.tempLayerDeactivationDelayMs = object.tempLayerDeactivationDelayMs ?? 0;
+    message.activeLayers = object.activeLayers?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseLayerInfo(): LayerInfo {
+  return { id: 0, name: "" };
+}
+
+export const LayerInfo: MessageFns<LayerInfo> = {
+  encode(message: LayerInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LayerInfo {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLayerInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<LayerInfo>): LayerInfo {
+    return LayerInfo.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<LayerInfo>): LayerInfo {
+    const message = createBaseLayerInfo();
+    message.id = object.id ?? 0;
+    message.name = object.name ?? "";
     return message;
   },
 };
@@ -1197,6 +1311,190 @@ export const SetTempLayerDeactivationDelayResponse: MessageFns<SetTempLayerDeact
   },
 };
 
+function createBaseSetActiveLayersRequest(): SetActiveLayersRequest {
+  return { id: 0, layers: [] };
+}
+
+export const SetActiveLayersRequest: MessageFns<SetActiveLayersRequest> = {
+  encode(message: SetActiveLayersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    writer.uint32(18).fork();
+    for (const v of message.layers) {
+      writer.uint32(v);
+    }
+    writer.join();
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetActiveLayersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetActiveLayersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag === 16) {
+            message.layers.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 18) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.layers.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetActiveLayersRequest>): SetActiveLayersRequest {
+    return SetActiveLayersRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetActiveLayersRequest>): SetActiveLayersRequest {
+    const message = createBaseSetActiveLayersRequest();
+    message.id = object.id ?? 0;
+    message.layers = object.layers?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseSetActiveLayersResponse(): SetActiveLayersResponse {
+  return {};
+}
+
+export const SetActiveLayersResponse: MessageFns<SetActiveLayersResponse> = {
+  encode(_: SetActiveLayersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetActiveLayersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetActiveLayersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetActiveLayersResponse>): SetActiveLayersResponse {
+    return SetActiveLayersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetActiveLayersResponse>): SetActiveLayersResponse {
+    const message = createBaseSetActiveLayersResponse();
+    return message;
+  },
+};
+
+function createBaseGetLayerInfoRequest(): GetLayerInfoRequest {
+  return {};
+}
+
+export const GetLayerInfoRequest: MessageFns<GetLayerInfoRequest> = {
+  encode(_: GetLayerInfoRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetLayerInfoRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetLayerInfoRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<GetLayerInfoRequest>): GetLayerInfoRequest {
+    return GetLayerInfoRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<GetLayerInfoRequest>): GetLayerInfoRequest {
+    const message = createBaseGetLayerInfoRequest();
+    return message;
+  },
+};
+
+function createBaseGetLayerInfoResponse(): GetLayerInfoResponse {
+  return { layers: [] };
+}
+
+export const GetLayerInfoResponse: MessageFns<GetLayerInfoResponse> = {
+  encode(message: GetLayerInfoResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.layers) {
+      LayerInfo.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetLayerInfoResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetLayerInfoResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.layers.push(LayerInfo.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<GetLayerInfoResponse>): GetLayerInfoResponse {
+    return GetLayerInfoResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetLayerInfoResponse>): GetLayerInfoResponse {
+    const message = createBaseGetLayerInfoResponse();
+    message.layers = object.layers?.map((e) => LayerInfo.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 function createBaseRequest(): Request {
   return {
     listProcessors: undefined,
@@ -1209,6 +1507,8 @@ function createBaseRequest(): Request {
     setTempLayerLayer: undefined,
     setTempLayerActivationDelay: undefined,
     setTempLayerDeactivationDelay: undefined,
+    setActiveLayers: undefined,
+    getLayerInfo: undefined,
   };
 }
 
@@ -1244,6 +1544,12 @@ export const Request: MessageFns<Request> = {
     if (message.setTempLayerDeactivationDelay !== undefined) {
       SetTempLayerDeactivationDelayRequest.encode(message.setTempLayerDeactivationDelay, writer.uint32(82).fork())
         .join();
+    }
+    if (message.setActiveLayers !== undefined) {
+      SetActiveLayersRequest.encode(message.setActiveLayers, writer.uint32(90).fork()).join();
+    }
+    if (message.getLayerInfo !== undefined) {
+      GetLayerInfoRequest.encode(message.getLayerInfo, writer.uint32(98).fork()).join();
     }
     return writer;
   },
@@ -1335,6 +1641,22 @@ export const Request: MessageFns<Request> = {
           message.setTempLayerDeactivationDelay = SetTempLayerDeactivationDelayRequest.decode(reader, reader.uint32());
           continue;
         }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.setActiveLayers = SetActiveLayersRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.getLayerInfo = GetLayerInfoRequest.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1381,6 +1703,12 @@ export const Request: MessageFns<Request> = {
       (object.setTempLayerDeactivationDelay !== undefined && object.setTempLayerDeactivationDelay !== null)
         ? SetTempLayerDeactivationDelayRequest.fromPartial(object.setTempLayerDeactivationDelay)
         : undefined;
+    message.setActiveLayers = (object.setActiveLayers !== undefined && object.setActiveLayers !== null)
+      ? SetActiveLayersRequest.fromPartial(object.setActiveLayers)
+      : undefined;
+    message.getLayerInfo = (object.getLayerInfo !== undefined && object.getLayerInfo !== null)
+      ? GetLayerInfoRequest.fromPartial(object.getLayerInfo)
+      : undefined;
     return message;
   },
 };
@@ -1444,6 +1772,8 @@ function createBaseResponse(): Response {
     setTempLayerLayer: undefined,
     setTempLayerActivationDelay: undefined,
     setTempLayerDeactivationDelay: undefined,
+    setActiveLayers: undefined,
+    getLayerInfo: undefined,
   };
 }
 
@@ -1482,6 +1812,12 @@ export const Response: MessageFns<Response> = {
     if (message.setTempLayerDeactivationDelay !== undefined) {
       SetTempLayerDeactivationDelayResponse.encode(message.setTempLayerDeactivationDelay, writer.uint32(90).fork())
         .join();
+    }
+    if (message.setActiveLayers !== undefined) {
+      SetActiveLayersResponse.encode(message.setActiveLayers, writer.uint32(98).fork()).join();
+    }
+    if (message.getLayerInfo !== undefined) {
+      GetLayerInfoResponse.encode(message.getLayerInfo, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -1581,6 +1917,22 @@ export const Response: MessageFns<Response> = {
           message.setTempLayerDeactivationDelay = SetTempLayerDeactivationDelayResponse.decode(reader, reader.uint32());
           continue;
         }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.setActiveLayers = SetActiveLayersResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.getLayerInfo = GetLayerInfoResponse.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1630,6 +1982,12 @@ export const Response: MessageFns<Response> = {
       (object.setTempLayerDeactivationDelay !== undefined && object.setTempLayerDeactivationDelay !== null)
         ? SetTempLayerDeactivationDelayResponse.fromPartial(object.setTempLayerDeactivationDelay)
         : undefined;
+    message.setActiveLayers = (object.setActiveLayers !== undefined && object.setActiveLayers !== null)
+      ? SetActiveLayersResponse.fromPartial(object.setActiveLayers)
+      : undefined;
+    message.getLayerInfo = (object.getLayerInfo !== undefined && object.getLayerInfo !== null)
+      ? GetLayerInfoResponse.fromPartial(object.getLayerInfo)
+      : undefined;
     return message;
   },
 };
