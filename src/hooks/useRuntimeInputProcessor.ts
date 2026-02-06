@@ -9,7 +9,11 @@ import {
   Notification,
   ProcessorInfo,
   LayerInfo,
+  SnapMode,
 } from "../proto/zmk/runtime_input_processor/runtime_input_processor";
+
+// Re-export SnapMode for convenience
+export { SnapMode };
 
 // Subsystem identifier for ZMK runtime input processor custom protocol
 // This matches the identifier registered in the ZMK firmware module
@@ -54,6 +58,9 @@ export interface InputProcessor {
   tempLayerActivationDelayMs: number;
   tempLayerDeactivationDelayMs: number;
   activeLayers: number; // Bitmask of active layers (0 = all layers)
+  snapMode: SnapMode;
+  snapThreshold: number;
+  snapDecayMs: number;
 }
 
 export interface LayerInformation {
@@ -79,6 +86,9 @@ export interface UseRuntimeInputProcessorReturn {
   setTempLayerActivationDelay: (id: number, delayMs: number) => Promise<void>;
   setTempLayerDeactivationDelay: (id: number, delayMs: number) => Promise<void>;
   setActiveLayers: (id: number, layersBitmask: number) => Promise<void>;
+  setSnapMode: (id: number, mode: SnapMode) => Promise<void>;
+  setSnapThreshold: (id: number, threshold: number) => Promise<void>;
+  setSnapDecay: (id: number, decayMs: number) => Promise<void>;
 }
 
 export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
@@ -132,6 +142,9 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
             tempLayerDeactivationDelayMs:
               processorInfo.tempLayerDeactivationDelayMs,
             activeLayers: processorInfo.activeLayers || 0,
+            snapMode: processorInfo.snapMode ?? SnapMode.SNAP_DISABLED,
+            snapThreshold: processorInfo.snapThreshold ?? 0,
+            snapDecayMs: processorInfo.snapDecayMs ?? 0,
           });
 
           // Update state with all collected processors
@@ -524,6 +537,138 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
     [zmkApp?.state.connection, subsystemIndex, loadProcessors],
   );
 
+  const setSnapMode = useCallback(
+    async (id: number, mode: SnapMode) => {
+      if (!zmkApp?.state.connection || subsystemIndex === undefined) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystemIndex,
+        );
+
+        const request = Request.create({
+          setSnapMode: {
+            id,
+            mode,
+          },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+          if (resp.error) {
+            setError(resp.error.message);
+            return;
+          }
+        }
+
+        await loadProcessors();
+      } catch (err) {
+        console.error("Failed to set snap mode:", err);
+        setError(
+          `Failed to set snap mode: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [zmkApp?.state.connection, subsystemIndex, loadProcessors],
+  );
+
+  const setSnapThreshold = useCallback(
+    async (id: number, threshold: number) => {
+      if (!zmkApp?.state.connection || subsystemIndex === undefined) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystemIndex,
+        );
+
+        const request = Request.create({
+          setSnapThreshold: {
+            id,
+            threshold,
+          },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+          if (resp.error) {
+            setError(resp.error.message);
+            return;
+          }
+        }
+
+        await loadProcessors();
+      } catch (err) {
+        console.error("Failed to set snap threshold:", err);
+        setError(
+          `Failed to set snap threshold: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [zmkApp?.state.connection, subsystemIndex, loadProcessors],
+  );
+
+  const setSnapDecay = useCallback(
+    async (id: number, decayMs: number) => {
+      if (!zmkApp?.state.connection || subsystemIndex === undefined) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystemIndex,
+        );
+
+        const request = Request.create({
+          setSnapDecay: {
+            id,
+            decayMs,
+          },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+          if (resp.error) {
+            setError(resp.error.message);
+            return;
+          }
+        }
+
+        await loadProcessors();
+      } catch (err) {
+        console.error("Failed to set snap decay:", err);
+        setError(
+          `Failed to set snap decay: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [zmkApp?.state.connection, subsystemIndex, loadProcessors],
+  );
+
   const loadLayers = useCallback(async () => {
     if (!zmkApp?.state.connection || subsystemIndex === undefined) {
       setError("Not connected to device or subsystem not found");
@@ -594,5 +739,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
     setTempLayerActivationDelay,
     setTempLayerDeactivationDelay,
     setActiveLayers,
+    setSnapMode,
+    setSnapThreshold,
+    setSnapDecay,
   };
 }

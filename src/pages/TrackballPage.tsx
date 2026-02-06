@@ -1,7 +1,10 @@
 import { useState, useRef } from "react";
 import { IconPointer } from "@tabler/icons-react";
 import * as Switch from "@radix-ui/react-switch";
-import { useRuntimeInputProcessor } from "../hooks/useRuntimeInputProcessor";
+import {
+  useRuntimeInputProcessor,
+  SnapMode,
+} from "../hooks/useRuntimeInputProcessor";
 import { useDebouncedSave } from "../hooks/useDebouncedSave";
 
 // Scaling preset types
@@ -36,6 +39,9 @@ export function TrackballPage() {
     setTempLayerActivationDelay,
     setTempLayerDeactivationDelay,
     setActiveLayers,
+    setSnapMode,
+    setSnapThreshold,
+    setSnapDecay,
   } = useRuntimeInputProcessor();
 
   // Selected processor index
@@ -62,6 +68,9 @@ export function TrackballPage() {
   const tempLayerActivationDelaySave = useDebouncedSave<number>();
   const tempLayerDeactivationDelaySave = useDebouncedSave<number>();
   const activeLayersSave = useDebouncedSave<number>();
+  const snapModeSave = useDebouncedSave<SnapMode>();
+  const snapThresholdSave = useDebouncedSave<number>();
+  const snapDecaySave = useDebouncedSave<number>();
 
   // Track previous processor to detect changes and reset pending state
   const previousProcessorRef = useRef<string | null>(null);
@@ -81,6 +90,9 @@ export function TrackballPage() {
     tempLayerActivationDelaySave.reset();
     tempLayerDeactivationDelaySave.reset();
     activeLayersSave.reset();
+    snapModeSave.reset();
+    snapThresholdSave.reset();
+    snapDecaySave.reset();
     setRotationEnabled(processor?.rotationDegrees !== 0);
     setActiveLayersMode(processor?.activeLayers === 0 ? "all" : "specific");
   }
@@ -106,6 +118,12 @@ export function TrackballPage() {
     500;
   const displayActiveLayers =
     activeLayersSave.pendingValue ?? processor?.activeLayers ?? 0;
+  const displaySnapMode =
+    snapModeSave.pendingValue ?? processor?.snapMode ?? SnapMode.SNAP_DISABLED;
+  const displaySnapThreshold =
+    snapThresholdSave.pendingValue ?? processor?.snapThreshold ?? 50;
+  const displaySnapDecay =
+    snapDecaySave.pendingValue ?? processor?.snapDecayMs ?? 200;
 
   // Calculate final scaling value (multiplier/divisor)
   const finalScalingValue =
@@ -211,6 +229,27 @@ export function TrackballPage() {
 
     activeLayersSave.setPendingValue(newBitmask, async (value) => {
       await setActiveLayers(processor.id, value);
+    });
+  };
+
+  const handleSnapModeChange = (mode: SnapMode) => {
+    if (!processor) return;
+    snapModeSave.setPendingValue(mode, async (value) => {
+      await setSnapMode(processor.id, value);
+    });
+  };
+
+  const handleSnapThresholdChange = (threshold: number) => {
+    if (!processor) return;
+    snapThresholdSave.setPendingValue(threshold, async (value) => {
+      await setSnapThreshold(processor.id, value);
+    });
+  };
+
+  const handleSnapDecayChange = (decayMs: number) => {
+    if (!processor) return;
+    snapDecaySave.setPendingValue(decayMs, async (value) => {
+      await setSnapDecay(processor.id, value);
     });
   };
 
@@ -502,6 +541,140 @@ export function TrackballPage() {
                     <span>-180°</span>
                     <span>0°</span>
                     <span>+180°</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Axis Snapping */}
+            <div className="glass-card p-6">
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-[var(--color-text)] mb-1">
+                  Axis Snapping
+                </h3>
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Constrain movement to a single axis for precision scrolling
+                </p>
+              </div>
+
+              {/* Snap Mode Selector */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <button
+                  onClick={() => handleSnapModeChange(SnapMode.SNAP_DISABLED)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    displaySnapMode === SnapMode.SNAP_DISABLED
+                      ? "bg-[var(--color-electric)] text-white"
+                      : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+                  }`}
+                >
+                  Disabled
+                </button>
+                <button
+                  onClick={() => handleSnapModeChange(SnapMode.SNAP_Y)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    displaySnapMode === SnapMode.SNAP_Y
+                      ? "bg-[var(--color-electric)] text-white"
+                      : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+                  }`}
+                >
+                  Y Snap
+                </button>
+                <button
+                  onClick={() => handleSnapModeChange(SnapMode.SNAP_X)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    displaySnapMode === SnapMode.SNAP_X
+                      ? "bg-[var(--color-electric)] text-white"
+                      : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+                  }`}
+                >
+                  X Snap
+                </button>
+              </div>
+
+              {/* Detail Settings - Only show when Y or X snap is selected */}
+              {(displaySnapMode === SnapMode.SNAP_Y ||
+                displaySnapMode === SnapMode.SNAP_X) && (
+                <div className="space-y-4 mt-6">
+                  {/* Snap Threshold */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm text-[var(--color-text-secondary)]">
+                        Snap Threshold
+                      </label>
+                      <span className="text-sm font-mono text-[var(--color-electric)]">
+                        {displaySnapThreshold}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={200}
+                      step={5}
+                      value={displaySnapThreshold}
+                      onChange={(e) =>
+                        handleSnapThresholdChange(Number(e.target.value))
+                      }
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer
+                        bg-[var(--color-border)]
+                        [&::-webkit-slider-thumb]:appearance-none
+                        [&::-webkit-slider-thumb]:w-4
+                        [&::-webkit-slider-thumb]:h-4
+                        [&::-webkit-slider-thumb]:rounded-full
+                        [&::-webkit-slider-thumb]:bg-[var(--color-electric)]
+                        [&::-webkit-slider-thumb]:cursor-pointer
+                        [&::-webkit-slider-thumb]:shadow-[0_0_8px_var(--color-electric)]
+                        [&::-moz-range-thumb]:w-4
+                        [&::-moz-range-thumb]:h-4
+                        [&::-moz-range-thumb]:rounded-full
+                        [&::-moz-range-thumb]:bg-[var(--color-electric)]
+                        [&::-moz-range-thumb]:border-0
+                        [&::-moz-range-thumb]:cursor-pointer
+                        [&::-moz-range-thumb]:shadow-[0_0_8px_var(--color-electric)]"
+                    />
+                    <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                      Minimum movement required to trigger axis snapping
+                    </p>
+                  </div>
+
+                  {/* Snap Decay */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm text-[var(--color-text-secondary)]">
+                        Snap Decay
+                      </label>
+                      <span className="text-sm font-mono text-[var(--color-electric)]">
+                        {displaySnapDecay}ms
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1000}
+                      step={50}
+                      value={displaySnapDecay}
+                      onChange={(e) =>
+                        handleSnapDecayChange(Number(e.target.value))
+                      }
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer
+                        bg-[var(--color-border)]
+                        [&::-webkit-slider-thumb]:appearance-none
+                        [&::-webkit-slider-thumb]:w-4
+                        [&::-webkit-slider-thumb]:h-4
+                        [&::-webkit-slider-thumb]:rounded-full
+                        [&::-webkit-slider-thumb]:bg-[var(--color-electric)]
+                        [&::-webkit-slider-thumb]:cursor-pointer
+                        [&::-webkit-slider-thumb]:shadow-[0_0_8px_var(--color-electric)]
+                        [&::-moz-range-thumb]:w-4
+                        [&::-moz-range-thumb]:h-4
+                        [&::-moz-range-thumb]:rounded-full
+                        [&::-moz-range-thumb]:bg-[var(--color-electric)]
+                        [&::-moz-range-thumb]:border-0
+                        [&::-moz-range-thumb]:cursor-pointer
+                        [&::-moz-range-thumb]:shadow-[0_0_8px_var(--color-electric)]"
+                    />
+                    <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                      Time after movement stops before snapping is released
+                    </p>
                   </div>
                 </div>
               )}

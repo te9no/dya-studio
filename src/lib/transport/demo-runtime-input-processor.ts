@@ -9,6 +9,7 @@ import {
   type Request,
   type Response,
   type ProcessorInfo,
+  SnapMode,
 } from "../../proto/zmk/runtime_input_processor/runtime_input_processor";
 
 export const RUNTIME_INPUT_PROCESSOR_IDENTIFIER = "cormoran_rip";
@@ -29,6 +30,9 @@ const MOCK_PROCESSORS: ProcessorInfo[] = [
     tempLayerActivationDelayMs: 100,
     tempLayerDeactivationDelayMs: 500,
     activeLayers: 0, // Bitmask: 0 = active on all layers
+    snapMode: SnapMode.SNAP_DISABLED,
+    snapThreshold: 50,
+    snapDecayMs: 200,
   },
 ];
 
