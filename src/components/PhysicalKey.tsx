@@ -23,6 +23,8 @@ interface PhysicalKeyProps {
   isModified: boolean;
   /** Display name for the binding */
   displayName: string;
+  /** Long display name (for tooltip) */
+  longDisplayName?: string;
   /** Original display name (for tooltip when modified) */
   originalDisplayName?: string;
   /** Full binding description including params (for tooltip) */
@@ -41,6 +43,7 @@ export function PhysicalKey({
   attrs,
   isModified,
   displayName,
+  longDisplayName,
   originalDisplayName,
   bindingDescription,
   isSelected,
@@ -155,17 +158,21 @@ export function PhysicalKey({
             <div className="space-y-1">
               {/* Always show displayName */}
               <div>
-                <span className="font-medium">{displayName}</span>
+                <span className="font-medium">
+                  {longDisplayName || displayName}
+                </span>
               </div>
               {/* Show binding description only if different from displayName */}
-              {bindingDescription && bindingDescription !== displayName && (
-                <div>
-                  <span className="text-[var(--color-text-muted)]">
-                    Binding:{" "}
-                  </span>
-                  <span>{bindingDescription}</span>
-                </div>
-              )}
+              {bindingDescription &&
+                bindingDescription !== displayName &&
+                longDisplayName !== bindingDescription && (
+                  <div>
+                    <span className="text-[var(--color-text-muted)]">
+                      Binding:{" "}
+                    </span>
+                    <span>{bindingDescription}</span>
+                  </div>
+                )}
               {/* Original binding info when modified */}
               {isModified && originalDisplayName && (
                 <div>

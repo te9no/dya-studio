@@ -18,6 +18,7 @@ import {
   MOUSE_SCROLLS,
   NO_PARAM_VALUE,
   formatKeycodeWithModifiers,
+  getKeycodeByCode,
 } from "../lib/keycodes";
 import {
   getBehaviorMetadata,
@@ -26,6 +27,7 @@ import {
   hasParam1,
   hasParam2,
   type ParamType,
+  formatBehaviorParam,
 } from "../lib/behaviorMetadata";
 import type { BehaviorBinding, BehaviorDefinition } from "../hooks/useKeymap";
 import { BehaviorDropdown } from "./BehaviorDropdown";
@@ -122,6 +124,7 @@ function formatParamValue(
   value: number,
   layers: Array<{ id: number; name: string }>,
   behavior: BehaviorDefinition | null,
+  paramNumber: 1 | 2,
 ): string {
   // For option-based paramTypes, 0 can be a valid value (e.g., BT_CLR)
   // Only show "Not set" for paramTypes where 0 has no meaning
@@ -173,8 +176,16 @@ function formatParamValue(
       return ms?.label || `Direction ${value}`;
     }
     case "number":
-    default:
       return String(value);
+    default:
+      return formatBehaviorParam(
+        getBehaviorParamInfo(behavior!, paramNumber)!,
+        value,
+        {
+          layers,
+          getKeycodeByCode: (code: number) => getKeycodeByCode(code) || null,
+        },
+      );
   }
 }
 
@@ -731,6 +742,7 @@ export function KeycodeSelector({
                         param1,
                         layers,
                         selectedBehaviorInfo.behavior,
+                        1,
                       )}
                     </div>
                   </button>
@@ -760,6 +772,7 @@ export function KeycodeSelector({
                         param2,
                         layers,
                         selectedBehaviorInfo.behavior,
+                        2,
                       )}
                     </div>
                   </button>

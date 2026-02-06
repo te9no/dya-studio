@@ -28,6 +28,8 @@ interface KeyboardLayoutProps {
   layout: PhysicalLayout;
   /** Current layer to display */
   layer: Layer;
+  /** Array of all available layers */
+  layers: Layer[];
   /** Map of behavior definitions */
   behaviors: Map<number, BehaviorDefinition>;
   /** Map of original bindings (unused but kept for potential future use) */
@@ -50,6 +52,7 @@ interface KeyboardLayoutProps {
 export function KeyboardLayout({
   layout,
   layer,
+  layers,
   behaviors,
   selectedKey,
   onKeyClick,
@@ -81,9 +84,9 @@ export function KeyboardLayout({
 
     return {
       width: maxX - minX + 20,
-      height: maxY - minY + 20,
+      height: maxY - minY + 60,
       offsetX: -minX + 10,
-      offsetY: -minY + 10,
+      offsetY: -minY + 30,
     };
   }, [layout.keys]);
 
@@ -135,11 +138,23 @@ export function KeyboardLayout({
       if (!binding) return "—";
       const behavior = behaviors.get(binding.behaviorId) || null;
       return formatBehaviorBinding(binding, behavior, {
-        layers: layer ? [layer] : undefined,
+        // Skip passing layers to displayShortName
         getKeycodeByCode: (code: number) => getKeycodeByCode(code) || null,
       });
     },
-    [behaviors, layer],
+    [behaviors],
+  );
+
+  const getKeyLongDisplayName = useCallback(
+    (_keyPosition: number, binding: BehaviorBinding | undefined): string => {
+      if (!binding) return "—";
+      const behavior = behaviors.get(binding.behaviorId) || null;
+      return formatBehaviorBinding(binding, behavior, {
+        layers: layers,
+        getKeycodeByCode: (code: number) => getKeycodeByCode(code) || null,
+      });
+    },
+    [behaviors, layers],
   );
 
   // Get original display name for tooltip
@@ -149,11 +164,11 @@ export function KeyboardLayout({
       if (!original) return undefined;
       const behavior = behaviors.get(original.behaviorId) || null;
       return formatBehaviorBinding(original, behavior, {
-        layers: layer ? [layer] : undefined,
+        layers: layers,
         getKeycodeByCode: (code: number) => getKeycodeByCode(code) || null,
       });
     },
-    [getOriginalBinding, layer, behaviors],
+    [getOriginalBinding, layer, behaviors, layers],
   );
 
   // Get full binding description for tooltip
@@ -196,6 +211,7 @@ export function KeyboardLayout({
               binding={binding}
               isModified={modified}
               displayName={getKeyDisplayName(position, binding)}
+              longDisplayName={getKeyLongDisplayName(position, binding)}
               originalDisplayName={
                 modified ? getOriginalDisplayName(position) : undefined
               }
