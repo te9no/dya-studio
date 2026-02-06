@@ -1090,9 +1090,9 @@ export function formatKeycodeWithModifiers(hidUsage: number): {
 export const MOUSE_KEYCODES = [
   { value: 1, label: "Left Click", shortLabel: "LCLK" },
   { value: 2, label: "Right Click", shortLabel: "RCLK" },
-  { value: 3, label: "Middle Click", shortLabel: "MCLK" },
-  { value: 4, label: "Button 4", shortLabel: "BTN4" },
-  { value: 5, label: "Button 5", shortLabel: "BTN5" },
+  { value: 4, label: "Middle Click", shortLabel: "MCLK" },
+  { value: 8, label: "Button 4", shortLabel: "BTN4" },
+  { value: 16, label: "Button 5", shortLabel: "BTN5" },
 ] as const;
 
 /**

@@ -63,7 +63,7 @@ export interface ParamValueMapping {
  */
 export interface FormatContext {
   /** Available layers for resolving layer names */
-  layers?: Layer[];
+  layers?: (Omit<Layer, "bindings"> & Partial<Pick<Layer, "bindings">>)[];
   /** Function to look up keycode by HID code */
   getKeycodeByCode?: (
     code: number,
@@ -257,20 +257,12 @@ const BEHAVIOR_METADATA_BASE: Record<string, BehaviorMetadata> = {
     category: "mod",
     displayNameVariants: ["Mod-Tap", "mt", "mod_tap"],
     shortCode: "MT",
-    param1Type: "number", // Modifier flags
+    param1Type: "keycode",
     param2Type: "keycode",
     getDisplayText: (binding) => {
-      // Build modifier prefix from param1
-      const modifiers = binding.param1;
-      const modParts: string[] = [];
-      MODIFIER_FLAGS.forEach((mod) => {
-        if (modifiers & mod.value) {
-          modParts.push(mod.shortLabel);
-        }
-      });
-      const modPrefix = modParts.length > 0 ? modParts.join("+") : "?";
-      const keyName = formatKeycode(binding.param2);
-      return `MT ${modPrefix}(${keyName})`;
+      const param1 = formatKeycode(binding.param1);
+      const param2 = formatKeycode(binding.param2);
+      return `MT ${param1} ${param2}`;
     },
     description: "Modifier on hold, key on tap",
   },
@@ -519,14 +511,53 @@ export function formatBehaviorBinding(
   }
 
   // Fallback: use behavior display name with params if present
-  if (binding.param1 !== 0 || binding.param2 !== 0) {
+  if (binding.param1 !== 0) {
+    const param1 = formatBehaviorParam(
+      getBehaviorParamInfo(behavior, 1),
+      binding.param1,
+      context,
+    );
     if (binding.param2 !== 0) {
-      return `${behavior.displayName} ${binding.param1} ${binding.param2}`;
+      const param2 = formatBehaviorParam(
+        getBehaviorParamInfo(behavior, 2),
+        binding.param2,
+        context,
+      );
+      return `${behavior.displayName} ${param1} ${param2}`;
     }
-    return `${behavior.displayName} ${binding.param1}`;
+    return `${behavior.displayName} ${param1}`;
+  } else if (binding.param2 !== 0) {
+    const param2 = formatBehaviorParam(
+      getBehaviorParamInfo(behavior, 2),
+      binding.param2,
+      context,
+    );
+    return `${behavior.displayName} ${param2}`;
   }
 
   return behavior.displayName;
+}
+
+export function formatBehaviorParam(
+  paramInfo: BehaviorParameterInfo | null,
+  value: number,
+  context: FormatContext,
+): string {
+  if (!paramInfo) {
+    return value.toString();
+  }
+  switch (paramInfo.type) {
+    case "nil":
+      return "";
+    case "hidUsage":
+      return formatKeycode(value);
+    case "layerId":
+      return context.layers?.[value]?.name || `Layer ${value}`;
+    case "constant":
+    case "range":
+    default:
+      return value.toString();
+  }
 }
 
 /**

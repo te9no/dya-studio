@@ -461,6 +461,7 @@ export function KeymapPage() {
                 <KeyboardLayout
                   layout={currentLayout}
                   layer={currentLayer}
+                  layers={keymap.keymap.layers}
                   behaviors={keymap.behaviors}
                   selectedKey={selectedKeyPosition}
                   onKeyClick={handleKeyClick}
