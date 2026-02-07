@@ -2,6 +2,8 @@
  * Local storage utilities for connection notice acceptance
  */
 
+import type { ConnectionMethod } from "../components/DeviceConnection";
+
 // Version of the notice - increment when notice content changes
 const NOTICE_VERSION = "1.0.0";
 const NOTICE_STORAGE_KEY = "dya-studio-connection-notice-accepted";
@@ -9,9 +11,11 @@ const NOTICE_STORAGE_KEY = "dya-studio-connection-notice-accepted";
 /**
  * Check if user has already accepted the current version of the notice
  */
-export function hasAcceptedNotice(): boolean {
+export function hasAcceptedNotice(connectionMethod: ConnectionMethod): boolean {
   try {
-    const accepted = localStorage.getItem(NOTICE_STORAGE_KEY);
+    const accepted = localStorage.getItem(
+      NOTICE_STORAGE_KEY + `-${connectionMethod}`,
+    );
     return accepted === NOTICE_VERSION;
   } catch {
     return false;
@@ -21,9 +25,12 @@ export function hasAcceptedNotice(): boolean {
 /**
  * Save the notice acceptance to local storage
  */
-export function saveNoticeAcceptance(): void {
+export function saveNoticeAcceptance(connectionMethod: ConnectionMethod): void {
   try {
-    localStorage.setItem(NOTICE_STORAGE_KEY, NOTICE_VERSION);
+    localStorage.setItem(
+      NOTICE_STORAGE_KEY + `-${connectionMethod}`,
+      NOTICE_VERSION,
+    );
   } catch {
     // Ignore storage errors
   }

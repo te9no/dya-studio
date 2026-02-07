@@ -45,7 +45,7 @@ export function SplashScreen({
       }
 
       // Check if user has already accepted the notice
-      if (hasAcceptedNotice()) {
+      if (hasAcceptedNotice(method)) {
         onConnect(method);
         return;
       }
