@@ -2,8 +2,8 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   IconSettings,
-  IconAlertTriangle,
   IconChevronDown,
+  IconAlertTriangleFilled,
 } from "@tabler/icons-react";
 import { useSettings } from "../hooks/useSettings";
 
@@ -219,10 +219,8 @@ function TimeDropdown({ value, onChange, presets }: TimeDropdownProps) {
 }
 
 export function SettingsPage() {
-  const { devices, isLoading, error, setActivitySettings, resetToDefaults } =
+  const { isAvailable, devices, isLoading, error, setActivitySettings } =
     useSettings();
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-
   // Track if user has edited the form
   const [hasEdits, setHasEdits] = useState(false);
   const [editedIdleTimeout, setEditedIdleTimeout] = useState<number>(0);
@@ -259,12 +257,6 @@ export function SettingsPage() {
     setHasEdits(false);
   };
 
-  const handleResetToDefaults = async () => {
-    await resetToDefaults();
-    setShowResetConfirm(false);
-    setHasEdits(false);
-  };
-
   return (
     <div className="p-6 h-full overflow-auto">
       <div className="max-w-4xl mx-auto">
@@ -282,6 +274,28 @@ export function SettingsPage() {
             </p>
           </div>
         </div>
+
+        {!isAvailable && !isLoading && !error && (
+          <div className="mb-6 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)] flex items-start gap-3">
+            <div className="p-2">
+              <IconAlertTriangleFilled size={24} className="text-red-500" />
+            </div>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Settings RPC subsystem is not available for your keyboard.
+              <br />
+              Make sure your firmware has the
+              <a
+                href="https://github.com/cormoran/zmk-module-settings-rpc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--color-electric)] underline mx-1"
+              >
+                cormoran/zmk-module-settings-rpc
+              </a>
+              enabled.
+            </p>
+          </div>
+        )}
 
         {/* Error Display */}
         {error && (
@@ -374,7 +388,7 @@ export function SettingsPage() {
               )}
             </div>
 
-            {/* Danger Zone */}
+            {/* Danger Zone
             <div className="glass-card p-6 border-red-500/20">
               <h3 className="text-sm font-medium text-red-400 mb-4">
                 Danger Zone
@@ -418,7 +432,7 @@ export function SettingsPage() {
                   )}
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         ) : (
           !isLoading && (
@@ -429,15 +443,6 @@ export function SettingsPage() {
             </div>
           )
         )}
-
-        {/* Info */}
-        <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
-          <p className="text-xs text-[var(--color-text-muted)]">
-            Connect your keyboard to modify settings. Changes apply to all
-            devices (central + peripherals). Individual device settings are
-            shown for reference only.
-          </p>
-        </div>
       </div>
     </div>
   );

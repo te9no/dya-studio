@@ -242,18 +242,4 @@ describe("TrackballPage", () => {
     // The final scaling value should be displayed (3/2 = 1.50x)
     expect(screen.getByText("1.50x")).toBeInTheDocument();
   });
-
-  it("should display info message about runtime input processor", () => {
-    mockUseRuntimeInputProcessor.mockReturnValue(
-      createMockHookReturn({
-        processors: [createMockProcessor()],
-      }),
-    );
-
-    render(<TrackballPage />);
-
-    expect(
-      screen.getByText(/Runtime input processor allows you to adjust/),
-    ).toBeInTheDocument();
-  });
 });

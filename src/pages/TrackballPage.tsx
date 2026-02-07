@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { IconPointer } from "@tabler/icons-react";
+import { IconAlertTriangleFilled, IconPointer } from "@tabler/icons-react";
 import * as Switch from "@radix-ui/react-switch";
 import { useRuntimeInputProcessor } from "../hooks/useRuntimeInputProcessor";
 import { AxisSnapMode } from "../proto/zmk/runtime_input_processor/runtime_input_processor";
@@ -26,6 +26,7 @@ const SCROLL_PRESETS = [
 
 export function TrackballPage() {
   const {
+    isAvailable,
     processors,
     layers,
     isLoading,
@@ -281,6 +282,28 @@ export function TrackballPage() {
             </p>
           </div>
         </div>
+
+        {!isAvailable && !isLoading && !error && (
+          <div className="mb-6 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)] flex items-start gap-3">
+            <div className="p-2">
+              <IconAlertTriangleFilled size={24} className="text-red-500" />
+            </div>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Runtime input processor subsystem is not available for your
+              keyboard. <br />
+              Make sure your firmware has the
+              <a
+                href="https://github.com/cormoran/zmk-module-runtime-input-processor"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--color-electric)] underline mx-1"
+              >
+                cormoran/zmk-module-runtime-input-processor
+              </a>
+              enabled.
+            </p>
+          </div>
+        )}
 
         {/* Error state */}
         {error && (
@@ -840,16 +863,6 @@ export function TrackballPage() {
             </div>
           </div>
         )}
-
-        {/* Info */}
-        <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
-          <p className="text-xs text-[var(--color-text-muted)]">
-            Runtime input processor allows you to adjust trackball sensitivity,
-            rotation, and temporary layer activation without rebuilding
-            firmware. Changes are automatically saved to the device after 1
-            second and persist across reboots.
-          </p>
-        </div>
       </div>
     </div>
   );
