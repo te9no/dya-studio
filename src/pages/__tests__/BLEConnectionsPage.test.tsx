@@ -65,6 +65,7 @@ describe("BLEConnectionsPage", () => {
 
     // Set default mock return value for useBLEProfiles
     mockUseBLEProfiles.mockReturnValue({
+      isAvailable: true,
       profiles: [],
       maxProfiles: 5,
       isLoading: false,
@@ -107,20 +108,6 @@ describe("BLEConnectionsPage", () => {
       expect(screen.getByText("BLE Connections")).toBeInTheDocument();
       expect(
         screen.getByText("Manage Bluetooth upstream connections"),
-      ).toBeInTheDocument();
-    });
-
-    it("should show connect message when not connected", () => {
-      renderComponent();
-      expect(
-        screen.getByText("Connect your keyboard to manage BLE profiles"),
-      ).toBeInTheDocument();
-    });
-
-    it("should show help text with colored border description", () => {
-      renderComponent();
-      expect(
-        screen.getByText(/highlighted with a colored border/),
       ).toBeInTheDocument();
     });
 

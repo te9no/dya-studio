@@ -34,7 +34,7 @@ export function AppLayout({
             <span className="text-lg font-light tracking-widest text-[var(--color-text)]">
               DYA
             </span>
-            <span className="text-xs font-light tracking-wider text-[var(--color-text-muted)] uppercase">
+            <span className="text-xs font-light tracking-wider text-[var(--color-text-muted)] uppercase pt-1">
               Studio
             </span>
           </div>
@@ -42,17 +42,6 @@ export function AppLayout({
 
         {/* Connection Status & Theme Toggle */}
         <div className="flex items-center gap-4">
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="theme-toggle"
-            aria-label={
-              theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
-            }
-          >
-            {theme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
-          </button>
-
           {isConnected ? (
             <>
               <div className="flex items-center gap-3">
@@ -81,6 +70,16 @@ export function AppLayout({
               )}
             </button>
           )}
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="theme-toggle"
+            aria-label={
+              theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+            }
+          >
+            {theme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
+          </button>
         </div>
       </header>
 

@@ -23,6 +23,7 @@ export interface BLEProfile {
 }
 
 export interface UseBLEProfilesReturn {
+  isAvailable: boolean;
   profiles: BLEProfile[];
   maxProfiles: number;
   isLoading: boolean;
@@ -323,6 +324,7 @@ export function useBLEProfiles(): UseBLEProfilesReturn {
   }, [subsystemIndex, zmkApp?.state.connection]);
 
   return {
+    isAvailable: subsystemIndex !== undefined,
     profiles,
     maxProfiles,
     isLoading,

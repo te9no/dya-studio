@@ -3,6 +3,7 @@ import {
   IconRefresh,
   IconTrash,
   IconAlertTriangle,
+  IconAlertTriangleFilled,
 } from "@tabler/icons-react";
 import { useState } from "react";
 import { useBatteryHistory } from "../hooks/useBatteryHistory";
@@ -15,8 +16,14 @@ function getBatteryColor(level: number): string {
 }
 
 export function BatteryPage() {
-  const { devices, isLoading, error, loadBatteryHistory, clearBatteryHistory } =
-    useBatteryHistory();
+  const {
+    isAvailable,
+    devices,
+    isLoading,
+    error,
+    loadBatteryHistory,
+    clearBatteryHistory,
+  } = useBatteryHistory();
   const [showClearWarning, setShowClearWarning] = useState(false);
 
   // Get current battery levels from the latest entry of each device
@@ -95,6 +102,27 @@ export function BatteryPage() {
             </button>
           </div>
         </div>
+        {!isAvailable && !isLoading && !error && (
+          <div className="mb-6 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)] flex items-start gap-3">
+            <div className="p-2">
+              <IconAlertTriangleFilled size={24} className="text-red-500" />
+            </div>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Battery history subsystem is not available for your keyboard.
+              <br />
+              Make sure your firmware has the
+              <a
+                href="https://github.com/cormoran/zmk-module-battery-history"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--color-electric)] underline mx-1"
+              >
+                cormoran/zmk-module-battery-history
+              </a>
+              enabled.
+            </p>
+          </div>
+        )}
 
         {/* Error message */}
         {error && (

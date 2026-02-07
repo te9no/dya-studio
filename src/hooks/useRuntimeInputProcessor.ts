@@ -69,6 +69,7 @@ export interface LayerInformation {
 }
 
 export interface UseRuntimeInputProcessorReturn {
+  isAvailable: boolean;
   processors: InputProcessor[];
   layers: LayerInformation[];
   isLoading: boolean;
@@ -727,6 +728,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
   }, [subsystemIndex, zmkApp?.state.connection, loadProcessors, loadLayers]);
 
   return {
+    isAvailable: subsystemIndex !== undefined,
     processors,
     layers,
     isLoading,

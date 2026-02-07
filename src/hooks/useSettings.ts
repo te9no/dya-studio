@@ -24,6 +24,7 @@ export interface DeviceActivitySettings {
 }
 
 export interface UseSettingsReturn {
+  isAvailable: boolean;
   devices: DeviceActivitySettings[];
   isLoading: boolean;
   error: string | null;
@@ -207,6 +208,7 @@ export function useSettings(): UseSettingsReturn {
   }, [subsystemIndex, zmkApp?.state.connection, loadAllSettings]);
 
   return {
+    isAvailable: subsystemIndex !== undefined,
     devices,
     isLoading,
     error,

@@ -25,6 +25,7 @@ export interface DeviceBatteryHistory {
 }
 
 export interface UseBatteryHistoryReturn {
+  isAvailable: boolean;
   devices: DeviceBatteryHistory[];
   isLoading: boolean;
   error: string | null;
@@ -201,6 +202,7 @@ export function useBatteryHistory(): UseBatteryHistoryReturn {
   }, [subsystemIndex, zmkApp?.state.connection, loadBatteryHistory]);
 
   return {
+    isAvailable: subsystemIndex !== undefined,
     devices,
     isLoading,
     error,

@@ -2,6 +2,7 @@ import {
   IconBrandGithub,
   IconShoppingCart,
   IconFile,
+  IconBrandX,
 } from "@tabler/icons-react";
 
 import Keyket2026 from "../assets/keyket2026.jpeg";
@@ -16,6 +17,13 @@ import DYA2Img from "../assets/dya2/dya2.jpeg";
 import DYA2Img2 from "../assets/dya2/dya2-2.jpeg";
 
 const Dya2Images = [DYA2Img, DYA2Img2];
+
+const xShareContents = {
+  title: encodeURIComponent("DYA Studio for DYA & ZMK Keyboards"),
+  link: encodeURIComponent("https://studio.dya.cormoran.works/"),
+  tags: "dya_studio,dy_kbd",
+};
+const xShareUrl = `https://twitter.com/intent/tweet?text=${xShareContents.title}&url=${xShareContents.link}&hashtags=${xShareContents.tags}`;
 
 export function HomePage() {
   return (
@@ -46,8 +54,18 @@ export function HomePage() {
               >
                 cormoran707
               </a>
-              .
             </p>
+          </div>
+          <div className="ml-auto">
+            <a
+              href={xShareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-3 py-1 rounded bg-[var(--color-electric)] text-white hover:bg-[var(--color-neon)] transition-colors text-xs font-semibold"
+              aria-label="Share on X"
+            >
+              Share on <IconBrandX size={16} className="ml-1" />
+            </a>
           </div>
         </div>
 
@@ -93,17 +111,16 @@ export function HomePage() {
               </div>
               <div className="flex-1 text-sm text-[var(--color-text-muted)] ">
                 <p className="mb-4">
-                  キーケットでは DYA Studio に対応した DYA2 と DYA Dash
-                  を販売予定です。
+                  キーケットでは DYA2 と DYA Dash を販売予定です。
                 </p>
-                <p className="mb-4 ml-2">
+                <p className="mb-4">
                   DYA2 は打鍵感にこだわった Tadpole
                   マウント採用の据え置き向けキーボードです。
                   <br />
                   Cherry MX互換スイッチ対応で、配列は US,JIS
                   の両方に対応しています。
                 </p>
-                <p className="mb-4 ml-2">
+                <p className="mb-4">
                   DYA Dash は携帯しやすさを重視した設計のキーボードです。
                   <br />
                   Choc V2スイッチに対応しています。
@@ -111,9 +128,7 @@ export function HomePage() {
                 <p className="mb-2">
                   どちらのキーボードも無線・分割・トラックボール・乾電池動作で、さらにタッチセンサーが搭載されています。
                 </p>
-                <p>
-                  開発がうまく進めばどちらも半田付けの不要なビルドキットとなる予定です。
-                </p>
+                <p>どちらも半田付けの不要なビルドキットとなる予定です。</p>
               </div>
             </div>
           </div>
@@ -123,6 +138,14 @@ export function HomePage() {
         <div className="glass-card p-6 mb-6">
           <h2 className="text-sm font-medium text-[var(--color-text-secondary)] mb-4">
             DYA Keyboard series
+            <a
+              href="https://x.com/intent/tweet?hashtags=dya_kbd"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-xs text-[var(--color-electric)] hover:text-[var(--color-neon)] transition-colors mx-1"
+            >
+              #dya_kbd
+            </a>
           </h2>
           <div className="space-y-3">
             {/* DYA Dash */}
@@ -279,6 +302,14 @@ export function HomePage() {
                   #dya_studio
                 </a>
                 hashtag.
+              </p>
+            </div>
+            <div>
+              <p className="font-medium text-[var(--color-text)] mb-1">
+                Q: Are there plan to migrate the ZMK fork to ZMK v0.4.0?
+              </p>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                A: Yes, I'm willing but not soon...
               </p>
             </div>
           </div>

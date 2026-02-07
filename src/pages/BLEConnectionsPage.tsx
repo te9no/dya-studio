@@ -9,6 +9,7 @@ import {
   IconUsb,
   IconRefresh,
   IconAlertTriangle,
+  IconAlertTriangleFilled,
 } from "@tabler/icons-react";
 import { useBLEProfiles } from "../hooks/useBLEProfiles";
 import { ConnectionContext } from "../components/DeviceConnection";
@@ -17,6 +18,7 @@ import { OutputPriority } from "../proto/zmk/ble_management/ble_management";
 export function BLEConnectionsPage() {
   const connection = useContext(ConnectionContext);
   const {
+    isAvailable,
     profiles,
     isLoading,
     error,
@@ -88,7 +90,7 @@ export function BLEConnectionsPage() {
           <div className="p-2 rounded-lg bg-[var(--color-cyber)]/10 border border-[var(--color-cyber)]/20">
             <IconBluetooth size={24} className="text-[var(--color-cyber)]" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-medium text-[var(--color-text)]">
               BLE Connections
             </h1>
@@ -96,13 +98,43 @@ export function BLEConnectionsPage() {
               Manage Bluetooth upstream connections
             </p>
           </div>
+          <div className="flex items-center gap-2">
+            {/* Refresh Button */}
+            {profiles.length > 0 && (
+              <button
+                className="btn-ghost flex items-center gap-2"
+                onClick={loadProfiles}
+                disabled={isLoading}
+                aria-label="Refresh profiles"
+              >
+                <IconRefresh
+                  size={16}
+                  className={isLoading ? "animate-spin" : ""}
+                />
+                Refresh
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Show message when not connected */}
-        {!connection.isConnected && (
-          <div className="glass-card p-6 text-center">
+        {!isAvailable && !isLoading && !error && (
+          <div className="mb-6 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)] flex items-start gap-3">
+            <div className="p-2">
+              <IconAlertTriangleFilled size={24} className="text-red-500" />
+            </div>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Connect your keyboard to manage BLE profiles
+              BLE management subsystem is not available for your keyboard.
+              <br />
+              Make sure your firmware has the
+              <a
+                href="https://github.com/cormoran/zmk-module-ble-management"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--color-electric)] underline mx-1"
+              >
+                cormoran/zmk-module-ble-management
+              </a>
+              enabled.
             </p>
           </div>
         )}
@@ -115,7 +147,7 @@ export function BLEConnectionsPage() {
         )}
 
         {/* Output Priority Section */}
-        {connection.isConnected && (
+        {isAvailable && connection.isConnected && (
           <div className="glass-card p-4 mb-6">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
@@ -211,7 +243,7 @@ export function BLEConnectionsPage() {
         )}
 
         {/* Connection Slots */}
-        {connection.isConnected && (
+        {isAvailable && connection.isConnected && (
           <>
             {isLoading && profiles.length === 0 && (
               <div className="glass-card p-6 text-center">
@@ -335,31 +367,8 @@ export function BLEConnectionsPage() {
                 </div>
               ))}
             </div>
-
-            {/* Refresh Button */}
-            {profiles.length > 0 && (
-              <div className="mt-6 flex justify-center">
-                <button
-                  className="btn-ghost text-sm"
-                  onClick={loadProfiles}
-                  disabled={isLoading}
-                  aria-label="Refresh profiles"
-                >
-                  Refresh
-                </button>
-              </div>
-            )}
           </>
         )}
-
-        {/* Info */}
-        <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
-          <p className="text-xs text-[var(--color-text-muted)]">
-            Connect your keyboard to manage BLE profiles. Each profile can be
-            paired to a different host device. The active profile is highlighted
-            with a colored border.
-          </p>
-        </div>
 
         {/* Output Priority Warning Dialog */}
         {showOutputPriorityWarning && (

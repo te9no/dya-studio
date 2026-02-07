@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   IconBattery2,
   IconBluetooth,
-  IconHeartRateMonitor,
   IconHome,
   IconKeyboard,
   IconPointer,
@@ -22,7 +21,6 @@ import { AppLayout } from "./layouts/AppLayout";
 import { HomePage } from "./pages/HomePage";
 import { BatteryPage } from "./pages/BatteryPage";
 import { BLEConnectionsPage } from "./pages/BLEConnectionsPage";
-import { HealthCheckPage } from "./pages/HealthCheckPage";
 import { KeymapPage } from "./pages/KeymapPage";
 import { TrackballPage } from "./pages/TrackballPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -35,24 +33,6 @@ const tabs: TabItem[] = [
     content: <HomePage />,
   },
   {
-    id: "battery",
-    label: "Battery",
-    icon: <IconBattery2 size={18} />,
-    content: <BatteryPage />,
-  },
-  {
-    id: "ble",
-    label: "BLE",
-    icon: <IconBluetooth size={18} />,
-    content: <BLEConnectionsPage />,
-  },
-  {
-    id: "health",
-    label: "Health",
-    icon: <IconHeartRateMonitor size={18} />,
-    content: <HealthCheckPage />,
-  },
-  {
     id: "keymap",
     label: "Keymap",
     icon: <IconKeyboard size={18} />,
@@ -63,6 +43,18 @@ const tabs: TabItem[] = [
     label: "Trackball",
     icon: <IconPointer size={18} />,
     content: <TrackballPage />,
+  },
+  {
+    id: "battery",
+    label: "Battery",
+    icon: <IconBattery2 size={18} />,
+    content: <BatteryPage />,
+  },
+  {
+    id: "ble",
+    label: "BLE",
+    icon: <IconBluetooth size={18} />,
+    content: <BLEConnectionsPage />,
   },
   {
     id: "settings",
