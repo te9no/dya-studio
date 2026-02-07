@@ -175,9 +175,51 @@ export function BatteryPage() {
 
         {/* Battery History Chart */}
         <div className="glass-card p-6">
-          <h2 className="text-sm font-medium text-[var(--color-text-secondary)] mb-4">
-            Battery History
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium text-[var(--color-text-secondary)]">
+              Battery History
+            </h2>
+
+            {
+              <div className="flex flex-wrap gap-2 items-center">
+                {devices
+                  .filter((dev) => dev.totalEntries != dev.entries.length)
+                  .map((dev) => (
+                    <span
+                      key={dev.deviceName}
+                      className="flex items-center gap-1 px-2 py-1 rounded bg-[var(--color-border)] text-xs text-[var(--color-text-muted)]"
+                    >
+                      {!dev.lastEntryLoaded && (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4 text-[var(--color-electric)]"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                              opacity="0.2"
+                            />
+                            <path
+                              d="M12 2a10 10 0 0 1 10 10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                          </svg>
+                          Loading
+                        </>
+                      )}
+                      {dev.deviceName} ({dev.entries.length}/{dev.totalEntries})
+                    </span>
+                  ))}
+              </div>
+            }
+          </div>
 
           {isLoading && devices.length === 0 ? (
             <div className="h-64 flex items-center justify-center border border-dashed border-[var(--color-border)] rounded-lg">
