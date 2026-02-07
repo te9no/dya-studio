@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
 import { IconBluetooth, IconUsb, IconDeviceDesktop } from "@tabler/icons-react";
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import type { ConnectionMethod } from "./DeviceConnection";
+import { ConnectionNoticeDialog } from "./ConnectionNoticeDialog";
+import { hasAcceptedNotice } from "../lib/connectionNoticeStorage";
 
 interface SplashScreenProps {
   onConnect: (method: ConnectionMethod) => void;
@@ -26,6 +28,46 @@ export function SplashScreen({
   // Check if Web Serial API and Web Bluetooth API are available
   const isSerialAvailable = useMemo(() => "serial" in navigator, []);
   const isBLEAvailable = useMemo(() => "bluetooth" in navigator, []);
+
+  // Dialog state
+  const [showNotice, setShowNotice] = useState(false);
+  const [pendingMethod, setPendingMethod] = useState<ConnectionMethod | null>(
+    null,
+  );
+
+  const handleConnectClick = useCallback(
+    (method: ConnectionMethod) => {
+      // Demo mode doesn't need the notice
+      if (method === "demo") {
+        onConnect(method);
+        return;
+      }
+
+      // Check if user has already accepted the notice
+      if (hasAcceptedNotice(method)) {
+        onConnect(method);
+        return;
+      }
+
+      // Show notice dialog
+      setPendingMethod(method);
+      setShowNotice(true);
+    },
+    [onConnect],
+  );
+
+  const handleAgree = useCallback(() => {
+    setShowNotice(false);
+    if (pendingMethod) {
+      onConnect(pendingMethod);
+      setPendingMethod(null);
+    }
+  }, [pendingMethod, onConnect]);
+
+  const handleCancel = useCallback(() => {
+    setShowNotice(false);
+    setPendingMethod(null);
+  }, []);
 
   return (
     <motion.div
@@ -96,7 +138,7 @@ export function SplashScreen({
             {/* Device connection buttons */}
             <div className="flex gap-6">
               <button
-                onClick={() => onConnect("serial")}
+                onClick={() => handleConnectClick("serial")}
                 disabled={isConnecting || !isSerialAvailable}
                 className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-electric)] bg-[var(--color-electric)]/10 hover:bg-[var(--color-electric)]/20 hover:border-[var(--color-electric)] hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]"
                 aria-label="Connect via USB"
@@ -116,7 +158,7 @@ export function SplashScreen({
                 )}
               </button>
               <button
-                onClick={() => onConnect("ble")}
+                onClick={() => handleConnectClick("ble")}
                 disabled={isConnecting || !isBLEAvailable}
                 className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-neon)] bg-[var(--color-neon)]/10 hover:bg-[var(--color-neon)]/20 hover:border-[var(--color-neon)] hover:shadow-[0_0_20px_rgba(0,255,204,0.3)]"
                 aria-label="Connect via Bluetooth"
@@ -136,7 +178,7 @@ export function SplashScreen({
                 )}
               </button>
               <button
-                onClick={() => onConnect("demo")}
+                onClick={() => handleConnectClick("demo")}
                 disabled={isConnecting}
                 className="relative w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-[var(--color-cyber)] bg-[var(--color-cyber)]/10 hover:bg-[var(--color-cyber)]/20 hover:border-[var(--color-cyber)] hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]"
                 aria-label="Try Demo Mode"
@@ -230,6 +272,14 @@ export function SplashScreen({
         </a>
         .
       </motion.p>
+
+      {/* Connection Notice Dialog */}
+      <ConnectionNoticeDialog
+        open={showNotice}
+        method={pendingMethod}
+        onAgree={handleAgree}
+        onCancel={handleCancel}
+      />
     </motion.div>
   );
 }

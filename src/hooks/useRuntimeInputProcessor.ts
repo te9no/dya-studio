@@ -9,7 +9,11 @@ import {
   Notification,
   ProcessorInfo,
   LayerInfo,
+  AxisSnapMode,
 } from "../proto/zmk/runtime_input_processor/runtime_input_processor";
+
+// Re-export AxisSnapMode for convenience
+export { AxisSnapMode };
 
 // Subsystem identifier for ZMK runtime input processor custom protocol
 // This matches the identifier registered in the ZMK firmware module
@@ -54,6 +58,9 @@ export interface InputProcessor {
   tempLayerActivationDelayMs: number;
   tempLayerDeactivationDelayMs: number;
   activeLayers: number; // Bitmask of active layers (0 = all layers)
+  axisSnapMode: AxisSnapMode;
+  axisSnapThreshold: number;
+  axisSnapTimeoutMs: number;
 }
 
 export interface LayerInformation {
@@ -79,6 +86,9 @@ export interface UseRuntimeInputProcessorReturn {
   setTempLayerActivationDelay: (id: number, delayMs: number) => Promise<void>;
   setTempLayerDeactivationDelay: (id: number, delayMs: number) => Promise<void>;
   setActiveLayers: (id: number, layersBitmask: number) => Promise<void>;
+  setAxisSnapMode: (id: number, mode: AxisSnapMode) => Promise<void>;
+  setAxisSnapThreshold: (id: number, threshold: number) => Promise<void>;
+  setAxisSnapTimeout: (id: number, timeoutMs: number) => Promise<void>;
 }
 
 export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
@@ -132,6 +142,10 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
             tempLayerDeactivationDelayMs:
               processorInfo.tempLayerDeactivationDelayMs,
             activeLayers: processorInfo.activeLayers || 0,
+            axisSnapMode:
+              processorInfo.axisSnapMode ?? AxisSnapMode.AXIS_SNAP_MODE_NONE,
+            axisSnapThreshold: processorInfo.axisSnapThreshold ?? 0,
+            axisSnapTimeoutMs: processorInfo.axisSnapTimeoutMs ?? 0,
           });
 
           // Update state with all collected processors
@@ -524,6 +538,138 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
     [zmkApp?.state.connection, subsystemIndex, loadProcessors],
   );
 
+  const setAxisSnapMode = useCallback(
+    async (id: number, mode: AxisSnapMode) => {
+      if (!zmkApp?.state.connection || subsystemIndex === undefined) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystemIndex,
+        );
+
+        const request = Request.create({
+          setAxisSnapMode: {
+            id,
+            mode,
+          },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+          if (resp.error) {
+            setError(resp.error.message);
+            return;
+          }
+        }
+
+        await loadProcessors();
+      } catch (err) {
+        console.error("Failed to set axis snap mode:", err);
+        setError(
+          `Failed to set axis snap mode: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [zmkApp?.state.connection, subsystemIndex, loadProcessors],
+  );
+
+  const setAxisSnapThreshold = useCallback(
+    async (id: number, threshold: number) => {
+      if (!zmkApp?.state.connection || subsystemIndex === undefined) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystemIndex,
+        );
+
+        const request = Request.create({
+          setAxisSnapThreshold: {
+            id,
+            threshold,
+          },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+          if (resp.error) {
+            setError(resp.error.message);
+            return;
+          }
+        }
+
+        await loadProcessors();
+      } catch (err) {
+        console.error("Failed to set axis snap threshold:", err);
+        setError(
+          `Failed to set axis snap threshold: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [zmkApp?.state.connection, subsystemIndex, loadProcessors],
+  );
+
+  const setAxisSnapTimeout = useCallback(
+    async (id: number, timeoutMs: number) => {
+      if (!zmkApp?.state.connection || subsystemIndex === undefined) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystemIndex,
+        );
+
+        const request = Request.create({
+          setAxisSnapTimeout: {
+            id,
+            timeoutMs,
+          },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+          if (resp.error) {
+            setError(resp.error.message);
+            return;
+          }
+        }
+
+        await loadProcessors();
+      } catch (err) {
+        console.error("Failed to set axis snap timeout:", err);
+        setError(
+          `Failed to set axis snap timeout: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [zmkApp?.state.connection, subsystemIndex, loadProcessors],
+  );
+
   const loadLayers = useCallback(async () => {
     if (!zmkApp?.state.connection || subsystemIndex === undefined) {
       setError("Not connected to device or subsystem not found");
@@ -594,5 +740,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
     setTempLayerActivationDelay,
     setTempLayerDeactivationDelay,
     setActiveLayers,
+    setAxisSnapMode,
+    setAxisSnapThreshold,
+    setAxisSnapTimeout,
   };
 }
