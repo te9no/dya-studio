@@ -2,6 +2,13 @@ syntax = "proto3";
 
 package zmk.runtime_input_processor;
 
+// Axis snap mode enum
+enum AxisSnapMode {
+    AXIS_SNAP_MODE_NONE = 0;  // No snapping
+    AXIS_SNAP_MODE_X = 1;     // Snap to X axis
+    AXIS_SNAP_MODE_Y = 2;     // Snap to Y axis
+}
+
 // Information about a single input processor
 message ProcessorInfo {
     // Processor ID (index in array)
@@ -21,6 +28,10 @@ message ProcessorInfo {
     uint32 temp_layer_deactivation_delay_ms = 9;
     // Active layers bitmask (0 = all layers)
     uint32 active_layers = 10;
+    // Axis snap settings
+    AxisSnapMode axis_snap_mode = 11;  // Snap mode
+    uint32 axis_snap_threshold = 12;  // Threshold for unsnapping
+    uint32 axis_snap_timeout_ms = 13;  // Time window for threshold check (ms)
 }
 
 // Information about a keyboard layer
@@ -116,6 +127,30 @@ message SetActiveLayersRequest {
 
 message SetActiveLayersResponse {}
 
+// Request to set axis snap mode
+message SetAxisSnapModeRequest {
+    uint32 id = 1;
+    AxisSnapMode mode = 2;
+}
+
+message SetAxisSnapModeResponse {}
+
+// Request to set axis snap threshold
+message SetAxisSnapThresholdRequest {
+    uint32 id = 1;
+    uint32 threshold = 2;
+}
+
+message SetAxisSnapThresholdResponse {}
+
+// Request to set axis snap timeout
+message SetAxisSnapTimeoutRequest {
+    uint32 id = 1;
+    uint32 timeout_ms = 2;
+}
+
+message SetAxisSnapTimeoutResponse {}
+
 // Request to get layer information
 message GetLayerInfoRequest {}
 
@@ -138,6 +173,9 @@ message Request {
         SetTempLayerDeactivationDelayRequest set_temp_layer_deactivation_delay = 10;
         SetActiveLayersRequest set_active_layers = 11;
         GetLayerInfoRequest get_layer_info = 12;
+        SetAxisSnapModeRequest set_axis_snap_mode = 13;
+        SetAxisSnapThresholdRequest set_axis_snap_threshold = 14;
+        SetAxisSnapTimeoutRequest set_axis_snap_timeout = 15;
     }
 }
 
@@ -162,6 +200,9 @@ message Response {
         SetTempLayerDeactivationDelayResponse set_temp_layer_deactivation_delay = 11;
         SetActiveLayersResponse set_active_layers = 12;
         GetLayerInfoResponse get_layer_info = 13;
+        SetAxisSnapModeResponse set_axis_snap_mode = 14;
+        SetAxisSnapThresholdResponse set_axis_snap_threshold = 15;
+        SetAxisSnapTimeoutResponse set_axis_snap_timeout = 16;
     }
 }
 

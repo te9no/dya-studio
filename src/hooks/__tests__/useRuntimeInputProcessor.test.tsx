@@ -191,6 +191,9 @@ describe("useRuntimeInputProcessor", () => {
         tempLayerActivationDelayMs: 100,
         tempLayerDeactivationDelayMs: 500,
         activeLayers: 0,
+        axisSnapMode: 0,
+        axisSnapThreshold: 0,
+        axisSnapTimeoutMs: 0,
       });
       expect(result.current.error).toBe(null);
     });

@@ -9,6 +9,26 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 
 export const protobufPackage = "zmk.runtime_input_processor";
 
+/** Axis snap mode enum */
+export const AxisSnapMode = {
+  /** AXIS_SNAP_MODE_NONE - No snapping */
+  AXIS_SNAP_MODE_NONE: 0,
+  /** AXIS_SNAP_MODE_X - Snap to X axis */
+  AXIS_SNAP_MODE_X: 1,
+  /** AXIS_SNAP_MODE_Y - Snap to Y axis */
+  AXIS_SNAP_MODE_Y: 2,
+  UNRECOGNIZED: -1,
+} as const;
+
+export type AxisSnapMode = typeof AxisSnapMode[keyof typeof AxisSnapMode];
+
+export namespace AxisSnapMode {
+  export type AXIS_SNAP_MODE_NONE = typeof AxisSnapMode.AXIS_SNAP_MODE_NONE;
+  export type AXIS_SNAP_MODE_X = typeof AxisSnapMode.AXIS_SNAP_MODE_X;
+  export type AXIS_SNAP_MODE_Y = typeof AxisSnapMode.AXIS_SNAP_MODE_Y;
+  export type UNRECOGNIZED = typeof AxisSnapMode.UNRECOGNIZED;
+}
+
 /** Information about a single input processor */
 export interface ProcessorInfo {
   /** Processor ID (index in array) */
@@ -28,6 +48,12 @@ export interface ProcessorInfo {
   tempLayerDeactivationDelayMs: number;
   /** Active layers bitmask (0 = all layers) */
   activeLayers: number;
+  /** Axis snap settings */
+  axisSnapMode: AxisSnapMode;
+  /** Threshold for unsnapping */
+  axisSnapThreshold: number;
+  /** Time window for threshold check (ms) */
+  axisSnapTimeoutMs: number;
 }
 
 /** Information about a keyboard layer */
@@ -135,6 +161,33 @@ export interface SetActiveLayersRequest {
 export interface SetActiveLayersResponse {
 }
 
+/** Request to set axis snap mode */
+export interface SetAxisSnapModeRequest {
+  id: number;
+  mode: AxisSnapMode;
+}
+
+export interface SetAxisSnapModeResponse {
+}
+
+/** Request to set axis snap threshold */
+export interface SetAxisSnapThresholdRequest {
+  id: number;
+  threshold: number;
+}
+
+export interface SetAxisSnapThresholdResponse {
+}
+
+/** Request to set axis snap timeout */
+export interface SetAxisSnapTimeoutRequest {
+  id: number;
+  timeoutMs: number;
+}
+
+export interface SetAxisSnapTimeoutResponse {
+}
+
 /** Request to get layer information */
 export interface GetLayerInfoRequest {
 }
@@ -157,6 +210,9 @@ export interface Request {
   setTempLayerDeactivationDelay?: SetTempLayerDeactivationDelayRequest | undefined;
   setActiveLayers?: SetActiveLayersRequest | undefined;
   getLayerInfo?: GetLayerInfoRequest | undefined;
+  setAxisSnapMode?: SetAxisSnapModeRequest | undefined;
+  setAxisSnapThreshold?: SetAxisSnapThresholdRequest | undefined;
+  setAxisSnapTimeout?: SetAxisSnapTimeoutRequest | undefined;
 }
 
 /** Error response */
@@ -179,6 +235,9 @@ export interface Response {
   setTempLayerDeactivationDelay?: SetTempLayerDeactivationDelayResponse | undefined;
   setActiveLayers?: SetActiveLayersResponse | undefined;
   getLayerInfo?: GetLayerInfoResponse | undefined;
+  setAxisSnapMode?: SetAxisSnapModeResponse | undefined;
+  setAxisSnapThreshold?: SetAxisSnapThresholdResponse | undefined;
+  setAxisSnapTimeout?: SetAxisSnapTimeoutResponse | undefined;
 }
 
 /** Notification when processor settings change */
@@ -203,6 +262,9 @@ function createBaseProcessorInfo(): ProcessorInfo {
     tempLayerActivationDelayMs: 0,
     tempLayerDeactivationDelayMs: 0,
     activeLayers: 0,
+    axisSnapMode: 0,
+    axisSnapThreshold: 0,
+    axisSnapTimeoutMs: 0,
   };
 }
 
@@ -237,6 +299,15 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
     }
     if (message.activeLayers !== 0) {
       writer.uint32(80).uint32(message.activeLayers);
+    }
+    if (message.axisSnapMode !== 0) {
+      writer.uint32(88).int32(message.axisSnapMode);
+    }
+    if (message.axisSnapThreshold !== 0) {
+      writer.uint32(96).uint32(message.axisSnapThreshold);
+    }
+    if (message.axisSnapTimeoutMs !== 0) {
+      writer.uint32(104).uint32(message.axisSnapTimeoutMs);
     }
     return writer;
   },
@@ -328,6 +399,30 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
           message.activeLayers = reader.uint32();
           continue;
         }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.axisSnapMode = reader.int32() as any;
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.axisSnapThreshold = reader.uint32();
+          continue;
+        }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.axisSnapTimeoutMs = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -352,6 +447,9 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
     message.tempLayerActivationDelayMs = object.tempLayerActivationDelayMs ?? 0;
     message.tempLayerDeactivationDelayMs = object.tempLayerDeactivationDelayMs ?? 0;
     message.activeLayers = object.activeLayers ?? 0;
+    message.axisSnapMode = object.axisSnapMode ?? 0;
+    message.axisSnapThreshold = object.axisSnapThreshold ?? 0;
+    message.axisSnapTimeoutMs = object.axisSnapTimeoutMs ?? 0;
     return message;
   },
 };
@@ -1392,6 +1490,282 @@ export const SetActiveLayersResponse: MessageFns<SetActiveLayersResponse> = {
   },
 };
 
+function createBaseSetAxisSnapModeRequest(): SetAxisSnapModeRequest {
+  return { id: 0, mode: 0 };
+}
+
+export const SetAxisSnapModeRequest: MessageFns<SetAxisSnapModeRequest> = {
+  encode(message: SetAxisSnapModeRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.mode !== 0) {
+      writer.uint32(16).int32(message.mode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetAxisSnapModeRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetAxisSnapModeRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.mode = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetAxisSnapModeRequest>): SetAxisSnapModeRequest {
+    return SetAxisSnapModeRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetAxisSnapModeRequest>): SetAxisSnapModeRequest {
+    const message = createBaseSetAxisSnapModeRequest();
+    message.id = object.id ?? 0;
+    message.mode = object.mode ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetAxisSnapModeResponse(): SetAxisSnapModeResponse {
+  return {};
+}
+
+export const SetAxisSnapModeResponse: MessageFns<SetAxisSnapModeResponse> = {
+  encode(_: SetAxisSnapModeResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetAxisSnapModeResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetAxisSnapModeResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetAxisSnapModeResponse>): SetAxisSnapModeResponse {
+    return SetAxisSnapModeResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetAxisSnapModeResponse>): SetAxisSnapModeResponse {
+    const message = createBaseSetAxisSnapModeResponse();
+    return message;
+  },
+};
+
+function createBaseSetAxisSnapThresholdRequest(): SetAxisSnapThresholdRequest {
+  return { id: 0, threshold: 0 };
+}
+
+export const SetAxisSnapThresholdRequest: MessageFns<SetAxisSnapThresholdRequest> = {
+  encode(message: SetAxisSnapThresholdRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.threshold !== 0) {
+      writer.uint32(16).uint32(message.threshold);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetAxisSnapThresholdRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetAxisSnapThresholdRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.threshold = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetAxisSnapThresholdRequest>): SetAxisSnapThresholdRequest {
+    return SetAxisSnapThresholdRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetAxisSnapThresholdRequest>): SetAxisSnapThresholdRequest {
+    const message = createBaseSetAxisSnapThresholdRequest();
+    message.id = object.id ?? 0;
+    message.threshold = object.threshold ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetAxisSnapThresholdResponse(): SetAxisSnapThresholdResponse {
+  return {};
+}
+
+export const SetAxisSnapThresholdResponse: MessageFns<SetAxisSnapThresholdResponse> = {
+  encode(_: SetAxisSnapThresholdResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetAxisSnapThresholdResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetAxisSnapThresholdResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetAxisSnapThresholdResponse>): SetAxisSnapThresholdResponse {
+    return SetAxisSnapThresholdResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetAxisSnapThresholdResponse>): SetAxisSnapThresholdResponse {
+    const message = createBaseSetAxisSnapThresholdResponse();
+    return message;
+  },
+};
+
+function createBaseSetAxisSnapTimeoutRequest(): SetAxisSnapTimeoutRequest {
+  return { id: 0, timeoutMs: 0 };
+}
+
+export const SetAxisSnapTimeoutRequest: MessageFns<SetAxisSnapTimeoutRequest> = {
+  encode(message: SetAxisSnapTimeoutRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    if (message.timeoutMs !== 0) {
+      writer.uint32(16).uint32(message.timeoutMs);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetAxisSnapTimeoutRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetAxisSnapTimeoutRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.timeoutMs = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetAxisSnapTimeoutRequest>): SetAxisSnapTimeoutRequest {
+    return SetAxisSnapTimeoutRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetAxisSnapTimeoutRequest>): SetAxisSnapTimeoutRequest {
+    const message = createBaseSetAxisSnapTimeoutRequest();
+    message.id = object.id ?? 0;
+    message.timeoutMs = object.timeoutMs ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetAxisSnapTimeoutResponse(): SetAxisSnapTimeoutResponse {
+  return {};
+}
+
+export const SetAxisSnapTimeoutResponse: MessageFns<SetAxisSnapTimeoutResponse> = {
+  encode(_: SetAxisSnapTimeoutResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetAxisSnapTimeoutResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetAxisSnapTimeoutResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetAxisSnapTimeoutResponse>): SetAxisSnapTimeoutResponse {
+    return SetAxisSnapTimeoutResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SetAxisSnapTimeoutResponse>): SetAxisSnapTimeoutResponse {
+    const message = createBaseSetAxisSnapTimeoutResponse();
+    return message;
+  },
+};
+
 function createBaseGetLayerInfoRequest(): GetLayerInfoRequest {
   return {};
 }
@@ -1486,6 +1860,9 @@ function createBaseRequest(): Request {
     setTempLayerDeactivationDelay: undefined,
     setActiveLayers: undefined,
     getLayerInfo: undefined,
+    setAxisSnapMode: undefined,
+    setAxisSnapThreshold: undefined,
+    setAxisSnapTimeout: undefined,
   };
 }
 
@@ -1527,6 +1904,15 @@ export const Request: MessageFns<Request> = {
     }
     if (message.getLayerInfo !== undefined) {
       GetLayerInfoRequest.encode(message.getLayerInfo, writer.uint32(98).fork()).join();
+    }
+    if (message.setAxisSnapMode !== undefined) {
+      SetAxisSnapModeRequest.encode(message.setAxisSnapMode, writer.uint32(106).fork()).join();
+    }
+    if (message.setAxisSnapThreshold !== undefined) {
+      SetAxisSnapThresholdRequest.encode(message.setAxisSnapThreshold, writer.uint32(114).fork()).join();
+    }
+    if (message.setAxisSnapTimeout !== undefined) {
+      SetAxisSnapTimeoutRequest.encode(message.setAxisSnapTimeout, writer.uint32(122).fork()).join();
     }
     return writer;
   },
@@ -1634,6 +2020,30 @@ export const Request: MessageFns<Request> = {
           message.getLayerInfo = GetLayerInfoRequest.decode(reader, reader.uint32());
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.setAxisSnapMode = SetAxisSnapModeRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.setAxisSnapThreshold = SetAxisSnapThresholdRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.setAxisSnapTimeout = SetAxisSnapTimeoutRequest.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1685,6 +2095,15 @@ export const Request: MessageFns<Request> = {
       : undefined;
     message.getLayerInfo = (object.getLayerInfo !== undefined && object.getLayerInfo !== null)
       ? GetLayerInfoRequest.fromPartial(object.getLayerInfo)
+      : undefined;
+    message.setAxisSnapMode = (object.setAxisSnapMode !== undefined && object.setAxisSnapMode !== null)
+      ? SetAxisSnapModeRequest.fromPartial(object.setAxisSnapMode)
+      : undefined;
+    message.setAxisSnapThreshold = (object.setAxisSnapThreshold !== undefined && object.setAxisSnapThreshold !== null)
+      ? SetAxisSnapThresholdRequest.fromPartial(object.setAxisSnapThreshold)
+      : undefined;
+    message.setAxisSnapTimeout = (object.setAxisSnapTimeout !== undefined && object.setAxisSnapTimeout !== null)
+      ? SetAxisSnapTimeoutRequest.fromPartial(object.setAxisSnapTimeout)
       : undefined;
     return message;
   },
@@ -1751,6 +2170,9 @@ function createBaseResponse(): Response {
     setTempLayerDeactivationDelay: undefined,
     setActiveLayers: undefined,
     getLayerInfo: undefined,
+    setAxisSnapMode: undefined,
+    setAxisSnapThreshold: undefined,
+    setAxisSnapTimeout: undefined,
   };
 }
 
@@ -1795,6 +2217,15 @@ export const Response: MessageFns<Response> = {
     }
     if (message.getLayerInfo !== undefined) {
       GetLayerInfoResponse.encode(message.getLayerInfo, writer.uint32(106).fork()).join();
+    }
+    if (message.setAxisSnapMode !== undefined) {
+      SetAxisSnapModeResponse.encode(message.setAxisSnapMode, writer.uint32(114).fork()).join();
+    }
+    if (message.setAxisSnapThreshold !== undefined) {
+      SetAxisSnapThresholdResponse.encode(message.setAxisSnapThreshold, writer.uint32(122).fork()).join();
+    }
+    if (message.setAxisSnapTimeout !== undefined) {
+      SetAxisSnapTimeoutResponse.encode(message.setAxisSnapTimeout, writer.uint32(130).fork()).join();
     }
     return writer;
   },
@@ -1910,6 +2341,30 @@ export const Response: MessageFns<Response> = {
           message.getLayerInfo = GetLayerInfoResponse.decode(reader, reader.uint32());
           continue;
         }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.setAxisSnapMode = SetAxisSnapModeResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.setAxisSnapThreshold = SetAxisSnapThresholdResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.setAxisSnapTimeout = SetAxisSnapTimeoutResponse.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1964,6 +2419,15 @@ export const Response: MessageFns<Response> = {
       : undefined;
     message.getLayerInfo = (object.getLayerInfo !== undefined && object.getLayerInfo !== null)
       ? GetLayerInfoResponse.fromPartial(object.getLayerInfo)
+      : undefined;
+    message.setAxisSnapMode = (object.setAxisSnapMode !== undefined && object.setAxisSnapMode !== null)
+      ? SetAxisSnapModeResponse.fromPartial(object.setAxisSnapMode)
+      : undefined;
+    message.setAxisSnapThreshold = (object.setAxisSnapThreshold !== undefined && object.setAxisSnapThreshold !== null)
+      ? SetAxisSnapThresholdResponse.fromPartial(object.setAxisSnapThreshold)
+      : undefined;
+    message.setAxisSnapTimeout = (object.setAxisSnapTimeout !== undefined && object.setAxisSnapTimeout !== null)
+      ? SetAxisSnapTimeoutResponse.fromPartial(object.setAxisSnapTimeout)
       : undefined;
     return message;
   },

@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { IconPointer } from "@tabler/icons-react";
 import * as Switch from "@radix-ui/react-switch";
 import { useRuntimeInputProcessor } from "../hooks/useRuntimeInputProcessor";
+import { AxisSnapMode } from "../proto/zmk/runtime_input_processor/runtime_input_processor";
 import { useDebouncedSave } from "../hooks/useDebouncedSave";
 
 // Scaling preset types
@@ -36,6 +37,9 @@ export function TrackballPage() {
     setTempLayerActivationDelay,
     setTempLayerDeactivationDelay,
     setActiveLayers,
+    setAxisSnapMode,
+    setAxisSnapThreshold,
+    setAxisSnapTimeout,
   } = useRuntimeInputProcessor();
 
   // Selected processor index
@@ -62,6 +66,9 @@ export function TrackballPage() {
   const tempLayerActivationDelaySave = useDebouncedSave<number>();
   const tempLayerDeactivationDelaySave = useDebouncedSave<number>();
   const activeLayersSave = useDebouncedSave<number>();
+  const axisSnapModeSave = useDebouncedSave<AxisSnapMode>();
+  const axisSnapThresholdSave = useDebouncedSave<number>();
+  const axisSnapTimeoutSave = useDebouncedSave<number>();
 
   // Track previous processor to detect changes and reset pending state
   const previousProcessorRef = useRef<string | null>(null);
@@ -81,6 +88,9 @@ export function TrackballPage() {
     tempLayerActivationDelaySave.reset();
     tempLayerDeactivationDelaySave.reset();
     activeLayersSave.reset();
+    axisSnapModeSave.reset();
+    axisSnapThresholdSave.reset();
+    axisSnapTimeoutSave.reset();
     setRotationEnabled(processor?.rotationDegrees !== 0);
     setActiveLayersMode(processor?.activeLayers === 0 ? "all" : "specific");
   }
@@ -106,6 +116,14 @@ export function TrackballPage() {
     500;
   const displayActiveLayers =
     activeLayersSave.pendingValue ?? processor?.activeLayers ?? 0;
+  const displayAxisSnapMode =
+    axisSnapModeSave.pendingValue ??
+    processor?.axisSnapMode ??
+    AxisSnapMode.AXIS_SNAP_MODE_NONE;
+  const displayAxisSnapThreshold =
+    axisSnapThresholdSave.pendingValue ?? processor?.axisSnapThreshold ?? 50;
+  const displayAxisSnapTimeout =
+    axisSnapTimeoutSave.pendingValue ?? processor?.axisSnapTimeoutMs ?? 200;
 
   // Calculate final scaling value (multiplier/divisor)
   const finalScalingValue =
@@ -211,6 +229,38 @@ export function TrackballPage() {
 
     activeLayersSave.setPendingValue(newBitmask, async (value) => {
       await setActiveLayers(processor.id, value);
+    });
+  };
+
+  const handleAxisSnapEnabledChange = (enabled: boolean) => {
+    if (!processor) return;
+    // When enabling, default to Y axis snap
+    const newMode = enabled
+      ? AxisSnapMode.AXIS_SNAP_MODE_Y
+      : AxisSnapMode.AXIS_SNAP_MODE_NONE;
+    axisSnapModeSave.setPendingValue(newMode, async (value) => {
+      await setAxisSnapMode(processor.id, value);
+    });
+  };
+
+  const handleAxisSnapModeChange = (mode: AxisSnapMode) => {
+    if (!processor) return;
+    axisSnapModeSave.setPendingValue(mode, async (value) => {
+      await setAxisSnapMode(processor.id, value);
+    });
+  };
+
+  const handleAxisSnapThresholdChange = (threshold: number) => {
+    if (!processor) return;
+    axisSnapThresholdSave.setPendingValue(threshold, async (value) => {
+      await setAxisSnapThreshold(processor.id, value);
+    });
+  };
+
+  const handleAxisSnapTimeoutChange = (timeoutMs: number) => {
+    if (!processor) return;
+    axisSnapTimeoutSave.setPendingValue(timeoutMs, async (value) => {
+      await setAxisSnapTimeout(processor.id, value);
     });
   };
 
@@ -502,6 +552,151 @@ export function TrackballPage() {
                     <span>-180°</span>
                     <span>0°</span>
                     <span>+180°</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Axis Snapping */}
+            <div className="glass-card p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-medium text-[var(--color-text)]">
+                    Axis Snapping
+                  </h3>
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    Constrain movement to a single axis for precision scrolling
+                  </p>
+                </div>
+                <Switch.Root
+                  checked={
+                    displayAxisSnapMode !== AxisSnapMode.AXIS_SNAP_MODE_NONE
+                  }
+                  onCheckedChange={handleAxisSnapEnabledChange}
+                  className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
+                >
+                  <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform" />
+                </Switch.Root>
+              </div>
+
+              {displayAxisSnapMode !== AxisSnapMode.AXIS_SNAP_MODE_NONE && (
+                <div className="space-y-4 mt-6">
+                  {/* Axis Selection */}
+                  <div>
+                    <label className="text-sm text-[var(--color-text-secondary)] mb-3 block">
+                      Snap Axis
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() =>
+                          handleAxisSnapModeChange(
+                            AxisSnapMode.AXIS_SNAP_MODE_Y,
+                          )
+                        }
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          displayAxisSnapMode === AxisSnapMode.AXIS_SNAP_MODE_Y
+                            ? "bg-[var(--color-electric)] text-white"
+                            : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+                        }`}
+                      >
+                        Y Axis (Vertical)
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleAxisSnapModeChange(
+                            AxisSnapMode.AXIS_SNAP_MODE_X,
+                          )
+                        }
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          displayAxisSnapMode === AxisSnapMode.AXIS_SNAP_MODE_X
+                            ? "bg-[var(--color-electric)] text-white"
+                            : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
+                        }`}
+                      >
+                        X Axis (Horizontal)
+                      </button>
+                    </div>
+                  </div>
+                  {/* Snap Threshold */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm text-[var(--color-text-secondary)]">
+                        Snap Threshold
+                      </label>
+                      <span className="text-sm font-mono text-[var(--color-electric)]">
+                        {displayAxisSnapThreshold}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={200}
+                      step={5}
+                      value={displayAxisSnapThreshold}
+                      onChange={(e) =>
+                        handleAxisSnapThresholdChange(Number(e.target.value))
+                      }
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer
+                        bg-[var(--color-border)]
+                        [&::-webkit-slider-thumb]:appearance-none
+                        [&::-webkit-slider-thumb]:w-4
+                        [&::-webkit-slider-thumb]:h-4
+                        [&::-webkit-slider-thumb]:rounded-full
+                        [&::-webkit-slider-thumb]:bg-[var(--color-electric)]
+                        [&::-webkit-slider-thumb]:cursor-pointer
+                        [&::-webkit-slider-thumb]:shadow-[0_0_8px_var(--color-electric)]
+                        [&::-moz-range-thumb]:w-4
+                        [&::-moz-range-thumb]:h-4
+                        [&::-moz-range-thumb]:rounded-full
+                        [&::-moz-range-thumb]:bg-[var(--color-electric)]
+                        [&::-moz-range-thumb]:border-0
+                        [&::-moz-range-thumb]:cursor-pointer
+                        [&::-moz-range-thumb]:shadow-[0_0_8px_var(--color-electric)]"
+                    />
+                    <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                      Threshold for unsnapping from the locked axis
+                    </p>
+                  </div>
+
+                  {/* Snap Timeout */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm text-[var(--color-text-secondary)]">
+                        Snap Timeout
+                      </label>
+                      <span className="text-sm font-mono text-[var(--color-electric)]">
+                        {displayAxisSnapTimeout}ms
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={600}
+                      step={50}
+                      value={displayAxisSnapTimeout}
+                      onChange={(e) =>
+                        handleAxisSnapTimeoutChange(Number(e.target.value))
+                      }
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer
+                        bg-[var(--color-border)]
+                        [&::-webkit-slider-thumb]:appearance-none
+                        [&::-webkit-slider-thumb]:w-4
+                        [&::-webkit-slider-thumb]:h-4
+                        [&::-webkit-slider-thumb]:rounded-full
+                        [&::-webkit-slider-thumb]:bg-[var(--color-electric)]
+                        [&::-webkit-slider-thumb]:cursor-pointer
+                        [&::-webkit-slider-thumb]:shadow-[0_0_8px_var(--color-electric)]
+                        [&::-moz-range-thumb]:w-4
+                        [&::-moz-range-thumb]:h-4
+                        [&::-moz-range-thumb]:rounded-full
+                        [&::-moz-range-thumb]:bg-[var(--color-electric)]
+                        [&::-moz-range-thumb]:border-0
+                        [&::-moz-range-thumb]:cursor-pointer
+                        [&::-moz-range-thumb]:shadow-[0_0_8px_var(--color-electric)]"
+                    />
+                    <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                      Time window for threshold check
+                    </p>
                   </div>
                 </div>
               )}
