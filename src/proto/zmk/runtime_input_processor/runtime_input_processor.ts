@@ -54,14 +54,14 @@ export interface ProcessorInfo {
   axisSnapThreshold: number;
   /** Time window for threshold check (ms) */
   axisSnapTimeoutMs: number;
-  /** Axis invert settings */
-  xInvert: boolean;
-  /** Whether to invert Y axis */
-  yInvert: boolean;
   /** Code mapping features */
   xyToScrollEnabled: boolean;
   /** Swap X and Y axes */
   xySwapEnabled: boolean;
+  /** Axis invert settings */
+  xInvert: boolean;
+  /** Whether to invert Y axis */
+  yInvert: boolean;
 }
 
 /** Information about a keyboard layer */
@@ -257,10 +257,10 @@ export interface Request {
   setAxisSnapMode?: SetAxisSnapModeRequest | undefined;
   setAxisSnapThreshold?: SetAxisSnapThresholdRequest | undefined;
   setAxisSnapTimeout?: SetAxisSnapTimeoutRequest | undefined;
-  setXInvert?: SetXInvertRequest | undefined;
-  setYInvert?: SetYInvertRequest | undefined;
   setXyToScrollEnabled?: SetXyToScrollEnabledRequest | undefined;
   setXySwapEnabled?: SetXySwapEnabledRequest | undefined;
+  setXInvert?: SetXInvertRequest | undefined;
+  setYInvert?: SetYInvertRequest | undefined;
 }
 
 /** Error response */
@@ -286,10 +286,10 @@ export interface Response {
   setAxisSnapMode?: SetAxisSnapModeResponse | undefined;
   setAxisSnapThreshold?: SetAxisSnapThresholdResponse | undefined;
   setAxisSnapTimeout?: SetAxisSnapTimeoutResponse | undefined;
-  setXInvert?: SetXInvertResponse | undefined;
-  setYInvert?: SetYInvertResponse | undefined;
   setXyToScrollEnabled?: SetXyToScrollEnabledResponse | undefined;
   setXySwapEnabled?: SetXySwapEnabledResponse | undefined;
+  setXInvert?: SetXInvertResponse | undefined;
+  setYInvert?: SetYInvertResponse | undefined;
 }
 
 /** Notification when processor settings change */
@@ -317,10 +317,10 @@ function createBaseProcessorInfo(): ProcessorInfo {
     axisSnapMode: 0,
     axisSnapThreshold: 0,
     axisSnapTimeoutMs: 0,
-    xInvert: false,
-    yInvert: false,
     xyToScrollEnabled: false,
     xySwapEnabled: false,
+    xInvert: false,
+    yInvert: false,
   };
 }
 
@@ -365,17 +365,17 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
     if (message.axisSnapTimeoutMs !== 0) {
       writer.uint32(104).uint32(message.axisSnapTimeoutMs);
     }
-    if (message.xInvert !== false) {
-      writer.uint32(112).bool(message.xInvert);
-    }
-    if (message.yInvert !== false) {
-      writer.uint32(120).bool(message.yInvert);
-    }
     if (message.xyToScrollEnabled !== false) {
-      writer.uint32(128).bool(message.xyToScrollEnabled);
+      writer.uint32(112).bool(message.xyToScrollEnabled);
     }
     if (message.xySwapEnabled !== false) {
-      writer.uint32(136).bool(message.xySwapEnabled);
+      writer.uint32(120).bool(message.xySwapEnabled);
+    }
+    if (message.xInvert !== false) {
+      writer.uint32(128).bool(message.xInvert);
+    }
+    if (message.yInvert !== false) {
+      writer.uint32(136).bool(message.yInvert);
     }
     return writer;
   },
@@ -496,7 +496,7 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
             break;
           }
 
-          message.xInvert = reader.bool();
+          message.xyToScrollEnabled = reader.bool();
           continue;
         }
         case 15: {
@@ -504,7 +504,7 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
             break;
           }
 
-          message.yInvert = reader.bool();
+          message.xySwapEnabled = reader.bool();
           continue;
         }
         case 16: {
@@ -512,7 +512,7 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
             break;
           }
 
-          message.xyToScrollEnabled = reader.bool();
+          message.xInvert = reader.bool();
           continue;
         }
         case 17: {
@@ -520,7 +520,7 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
             break;
           }
 
-          message.xySwapEnabled = reader.bool();
+          message.yInvert = reader.bool();
           continue;
         }
       }
@@ -550,10 +550,10 @@ export const ProcessorInfo: MessageFns<ProcessorInfo> = {
     message.axisSnapMode = object.axisSnapMode ?? 0;
     message.axisSnapThreshold = object.axisSnapThreshold ?? 0;
     message.axisSnapTimeoutMs = object.axisSnapTimeoutMs ?? 0;
-    message.xInvert = object.xInvert ?? false;
-    message.yInvert = object.yInvert ?? false;
     message.xyToScrollEnabled = object.xyToScrollEnabled ?? false;
     message.xySwapEnabled = object.xySwapEnabled ?? false;
+    message.xInvert = object.xInvert ?? false;
+    message.yInvert = object.yInvert ?? false;
     return message;
   },
 };
@@ -2335,10 +2335,10 @@ function createBaseRequest(): Request {
     setAxisSnapMode: undefined,
     setAxisSnapThreshold: undefined,
     setAxisSnapTimeout: undefined,
-    setXInvert: undefined,
-    setYInvert: undefined,
     setXyToScrollEnabled: undefined,
     setXySwapEnabled: undefined,
+    setXInvert: undefined,
+    setYInvert: undefined,
   };
 }
 
@@ -2390,17 +2390,17 @@ export const Request: MessageFns<Request> = {
     if (message.setAxisSnapTimeout !== undefined) {
       SetAxisSnapTimeoutRequest.encode(message.setAxisSnapTimeout, writer.uint32(122).fork()).join();
     }
-    if (message.setXInvert !== undefined) {
-      SetXInvertRequest.encode(message.setXInvert, writer.uint32(130).fork()).join();
-    }
-    if (message.setYInvert !== undefined) {
-      SetYInvertRequest.encode(message.setYInvert, writer.uint32(138).fork()).join();
-    }
     if (message.setXyToScrollEnabled !== undefined) {
-      SetXyToScrollEnabledRequest.encode(message.setXyToScrollEnabled, writer.uint32(146).fork()).join();
+      SetXyToScrollEnabledRequest.encode(message.setXyToScrollEnabled, writer.uint32(130).fork()).join();
     }
     if (message.setXySwapEnabled !== undefined) {
-      SetXySwapEnabledRequest.encode(message.setXySwapEnabled, writer.uint32(154).fork()).join();
+      SetXySwapEnabledRequest.encode(message.setXySwapEnabled, writer.uint32(138).fork()).join();
+    }
+    if (message.setXInvert !== undefined) {
+      SetXInvertRequest.encode(message.setXInvert, writer.uint32(146).fork()).join();
+    }
+    if (message.setYInvert !== undefined) {
+      SetYInvertRequest.encode(message.setYInvert, writer.uint32(154).fork()).join();
     }
     return writer;
   },
@@ -2537,7 +2537,7 @@ export const Request: MessageFns<Request> = {
             break;
           }
 
-          message.setXInvert = SetXInvertRequest.decode(reader, reader.uint32());
+          message.setXyToScrollEnabled = SetXyToScrollEnabledRequest.decode(reader, reader.uint32());
           continue;
         }
         case 17: {
@@ -2545,7 +2545,7 @@ export const Request: MessageFns<Request> = {
             break;
           }
 
-          message.setYInvert = SetYInvertRequest.decode(reader, reader.uint32());
+          message.setXySwapEnabled = SetXySwapEnabledRequest.decode(reader, reader.uint32());
           continue;
         }
         case 18: {
@@ -2553,7 +2553,7 @@ export const Request: MessageFns<Request> = {
             break;
           }
 
-          message.setXyToScrollEnabled = SetXyToScrollEnabledRequest.decode(reader, reader.uint32());
+          message.setXInvert = SetXInvertRequest.decode(reader, reader.uint32());
           continue;
         }
         case 19: {
@@ -2561,7 +2561,7 @@ export const Request: MessageFns<Request> = {
             break;
           }
 
-          message.setXySwapEnabled = SetXySwapEnabledRequest.decode(reader, reader.uint32());
+          message.setYInvert = SetYInvertRequest.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -2625,17 +2625,17 @@ export const Request: MessageFns<Request> = {
     message.setAxisSnapTimeout = (object.setAxisSnapTimeout !== undefined && object.setAxisSnapTimeout !== null)
       ? SetAxisSnapTimeoutRequest.fromPartial(object.setAxisSnapTimeout)
       : undefined;
-    message.setXInvert = (object.setXInvert !== undefined && object.setXInvert !== null)
-      ? SetXInvertRequest.fromPartial(object.setXInvert)
-      : undefined;
-    message.setYInvert = (object.setYInvert !== undefined && object.setYInvert !== null)
-      ? SetYInvertRequest.fromPartial(object.setYInvert)
-      : undefined;
     message.setXyToScrollEnabled = (object.setXyToScrollEnabled !== undefined && object.setXyToScrollEnabled !== null)
       ? SetXyToScrollEnabledRequest.fromPartial(object.setXyToScrollEnabled)
       : undefined;
     message.setXySwapEnabled = (object.setXySwapEnabled !== undefined && object.setXySwapEnabled !== null)
       ? SetXySwapEnabledRequest.fromPartial(object.setXySwapEnabled)
+      : undefined;
+    message.setXInvert = (object.setXInvert !== undefined && object.setXInvert !== null)
+      ? SetXInvertRequest.fromPartial(object.setXInvert)
+      : undefined;
+    message.setYInvert = (object.setYInvert !== undefined && object.setYInvert !== null)
+      ? SetYInvertRequest.fromPartial(object.setYInvert)
       : undefined;
     return message;
   },
@@ -2705,10 +2705,10 @@ function createBaseResponse(): Response {
     setAxisSnapMode: undefined,
     setAxisSnapThreshold: undefined,
     setAxisSnapTimeout: undefined,
-    setXInvert: undefined,
-    setYInvert: undefined,
     setXyToScrollEnabled: undefined,
     setXySwapEnabled: undefined,
+    setXInvert: undefined,
+    setYInvert: undefined,
   };
 }
 
@@ -2763,17 +2763,17 @@ export const Response: MessageFns<Response> = {
     if (message.setAxisSnapTimeout !== undefined) {
       SetAxisSnapTimeoutResponse.encode(message.setAxisSnapTimeout, writer.uint32(130).fork()).join();
     }
-    if (message.setXInvert !== undefined) {
-      SetXInvertResponse.encode(message.setXInvert, writer.uint32(138).fork()).join();
-    }
-    if (message.setYInvert !== undefined) {
-      SetYInvertResponse.encode(message.setYInvert, writer.uint32(146).fork()).join();
-    }
     if (message.setXyToScrollEnabled !== undefined) {
-      SetXyToScrollEnabledResponse.encode(message.setXyToScrollEnabled, writer.uint32(154).fork()).join();
+      SetXyToScrollEnabledResponse.encode(message.setXyToScrollEnabled, writer.uint32(138).fork()).join();
     }
     if (message.setXySwapEnabled !== undefined) {
-      SetXySwapEnabledResponse.encode(message.setXySwapEnabled, writer.uint32(162).fork()).join();
+      SetXySwapEnabledResponse.encode(message.setXySwapEnabled, writer.uint32(146).fork()).join();
+    }
+    if (message.setXInvert !== undefined) {
+      SetXInvertResponse.encode(message.setXInvert, writer.uint32(154).fork()).join();
+    }
+    if (message.setYInvert !== undefined) {
+      SetYInvertResponse.encode(message.setYInvert, writer.uint32(162).fork()).join();
     }
     return writer;
   },
@@ -2918,7 +2918,7 @@ export const Response: MessageFns<Response> = {
             break;
           }
 
-          message.setXInvert = SetXInvertResponse.decode(reader, reader.uint32());
+          message.setXyToScrollEnabled = SetXyToScrollEnabledResponse.decode(reader, reader.uint32());
           continue;
         }
         case 18: {
@@ -2926,7 +2926,7 @@ export const Response: MessageFns<Response> = {
             break;
           }
 
-          message.setYInvert = SetYInvertResponse.decode(reader, reader.uint32());
+          message.setXySwapEnabled = SetXySwapEnabledResponse.decode(reader, reader.uint32());
           continue;
         }
         case 19: {
@@ -2934,7 +2934,7 @@ export const Response: MessageFns<Response> = {
             break;
           }
 
-          message.setXyToScrollEnabled = SetXyToScrollEnabledResponse.decode(reader, reader.uint32());
+          message.setXInvert = SetXInvertResponse.decode(reader, reader.uint32());
           continue;
         }
         case 20: {
@@ -2942,7 +2942,7 @@ export const Response: MessageFns<Response> = {
             break;
           }
 
-          message.setXySwapEnabled = SetXySwapEnabledResponse.decode(reader, reader.uint32());
+          message.setYInvert = SetYInvertResponse.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3009,17 +3009,17 @@ export const Response: MessageFns<Response> = {
     message.setAxisSnapTimeout = (object.setAxisSnapTimeout !== undefined && object.setAxisSnapTimeout !== null)
       ? SetAxisSnapTimeoutResponse.fromPartial(object.setAxisSnapTimeout)
       : undefined;
-    message.setXInvert = (object.setXInvert !== undefined && object.setXInvert !== null)
-      ? SetXInvertResponse.fromPartial(object.setXInvert)
-      : undefined;
-    message.setYInvert = (object.setYInvert !== undefined && object.setYInvert !== null)
-      ? SetYInvertResponse.fromPartial(object.setYInvert)
-      : undefined;
     message.setXyToScrollEnabled = (object.setXyToScrollEnabled !== undefined && object.setXyToScrollEnabled !== null)
       ? SetXyToScrollEnabledResponse.fromPartial(object.setXyToScrollEnabled)
       : undefined;
     message.setXySwapEnabled = (object.setXySwapEnabled !== undefined && object.setXySwapEnabled !== null)
       ? SetXySwapEnabledResponse.fromPartial(object.setXySwapEnabled)
+      : undefined;
+    message.setXInvert = (object.setXInvert !== undefined && object.setXInvert !== null)
+      ? SetXInvertResponse.fromPartial(object.setXInvert)
+      : undefined;
+    message.setYInvert = (object.setYInvert !== undefined && object.setYInvert !== null)
+      ? SetYInvertResponse.fromPartial(object.setYInvert)
       : undefined;
     return message;
   },
