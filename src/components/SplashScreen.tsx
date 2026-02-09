@@ -1,5 +1,10 @@
 import { motion } from "framer-motion";
-import { IconBluetooth, IconUsb, IconDeviceDesktop } from "@tabler/icons-react";
+import {
+  IconBluetooth,
+  IconUsb,
+  IconDeviceDesktop,
+  IconArrowUp,
+} from "@tabler/icons-react";
 import { useState, useCallback } from "react";
 import type { ConnectionMethod } from "./DeviceConnection";
 import { ConnectionNoticeDialog } from "./ConnectionNoticeDialog";
@@ -186,13 +191,23 @@ export function SplashScreen({
 
           {/* Demo mode hint */}
           <motion.p
-            className="text-xs text-[var(--color-text-muted)] mt-2"
+            className="text-xs text-[var(--color-text-muted)] mt-2 text-center leading-tight"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2 }}
           >
-            Try <span className="text-[var(--color-cyber)]">demo mode</span>{" "}
-            without a device
+            Try
+            <span className="text-[var(--color-cyber)] font-bold mx-1">
+              demo mode
+            </span>
+            without a keyboard
+            <br />
+            キーボードがなくても
+            <span className="text-[var(--color-cyber)] font-bold mx-1">
+              デモモード
+            </span>
+            で遊べます
+            <IconArrowUp size={14} className="inline-block" />
           </motion.p>
         </motion.div>
       </motion.div>
