@@ -128,7 +128,7 @@ export function KeycodeValueSelector({
               </button>
             )}
           </div>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex gap-1 overflow-x-auto">
             {MODIFIER_FLAGS.map((mod) => (
               <button
                 key={mod.value}
@@ -159,7 +159,7 @@ export function KeycodeValueSelector({
             placeholder="Search keycodes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
+            className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] tablet:text-sm text-base text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-electric)]/50"
           />
           {searchQuery && (
             <button

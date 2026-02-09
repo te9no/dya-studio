@@ -176,6 +176,22 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
     };
   }, [zmkApp, subsystemIndex]);
 
+  const updateProcessorOptimistically = useCallback(
+    (id: number, fields: Partial<InputProcessor>) => {
+      setProcessors((prev) =>
+        prev.map((processor) =>
+          processor.id === id
+            ? {
+                ...processor,
+                ...fields,
+              }
+            : processor,
+        ),
+      );
+    },
+    [],
+  );
+
   const loadProcessors = useCallback(async () => {
     if (!zmkApp?.state.connection || subsystemIndex === undefined) {
       setError("Not connected to device or subsystem not found");
@@ -256,6 +272,11 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           }
         }
 
+        updateProcessorOptimistically(id, {
+          scaleMultiplier: simplified.multiplier,
+          scaleDivisor: simplified.divisor,
+        });
+
         // Set divisor
         const divisorRequest = Request.create({
           setScaleDivisor: {
@@ -283,7 +304,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setRotation = useCallback(
@@ -298,6 +319,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, { rotationDegrees: degrees });
 
         const request = Request.create({
           setRotation: {
@@ -325,7 +348,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setTempLayerEnabled = useCallback(
@@ -340,6 +363,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, { tempLayerEnabled: enabled });
 
         const request = Request.create({
           setTempLayerEnabled: {
@@ -367,7 +392,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setTempLayerLayer = useCallback(
@@ -382,6 +407,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, { tempLayerLayer: layer });
 
         const request = Request.create({
           setTempLayerLayer: {
@@ -409,7 +436,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setTempLayerActivationDelay = useCallback(
@@ -424,6 +451,10 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, {
+          tempLayerActivationDelayMs: delayMs,
+        });
 
         const request = Request.create({
           setTempLayerActivationDelay: {
@@ -451,7 +482,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setTempLayerDeactivationDelay = useCallback(
@@ -466,6 +497,10 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, {
+          tempLayerDeactivationDelayMs: delayMs,
+        });
 
         const request = Request.create({
           setTempLayerDeactivationDelay: {
@@ -493,7 +528,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setActiveLayers = useCallback(
@@ -508,6 +543,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, { activeLayers: layersBitmask });
 
         const request = Request.create({
           setActiveLayers: {
@@ -535,7 +572,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setAxisSnapMode = useCallback(
@@ -550,6 +587,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, { axisSnapMode: mode });
 
         const request = Request.create({
           setAxisSnapMode: {
@@ -577,7 +616,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setAxisSnapThreshold = useCallback(
@@ -592,6 +631,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, { axisSnapThreshold: threshold });
 
         const request = Request.create({
           setAxisSnapThreshold: {
@@ -619,7 +660,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setAxisSnapTimeout = useCallback(
@@ -634,6 +675,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, { axisSnapTimeoutMs: timeoutMs });
 
         const request = Request.create({
           setAxisSnapTimeout: {
@@ -661,7 +704,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setXInvert = useCallback(
@@ -676,6 +719,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, { xInvert: invert });
 
         const request = Request.create({
           setXInvert: {
@@ -703,7 +748,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setYInvert = useCallback(
@@ -718,6 +763,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, { yInvert: invert });
 
         const request = Request.create({
           setYInvert: {
@@ -745,7 +792,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setXyToScrollEnabled = useCallback(
@@ -760,6 +807,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, { xyToScrollEnabled: enabled });
 
         const request = Request.create({
           setXyToScrollEnabled: {
@@ -787,7 +836,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const setXySwapEnabled = useCallback(
@@ -802,6 +851,8 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
           zmkApp.state.connection,
           subsystemIndex,
         );
+
+        updateProcessorOptimistically(id, { xySwapEnabled: enabled });
 
         const request = Request.create({
           setXySwapEnabled: {
@@ -829,7 +880,7 @@ export function useRuntimeInputProcessor(): UseRuntimeInputProcessorReturn {
         setIsLoading(false);
       }
     },
-    [zmkApp?.state.connection, subsystemIndex],
+    [zmkApp?.state.connection, subsystemIndex, updateProcessorOptimistically],
   );
 
   const loadLayers = useCallback(async () => {

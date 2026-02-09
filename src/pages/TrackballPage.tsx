@@ -418,15 +418,17 @@ export function TrackballPage() {
                     Configure which layers this processor is active on
                   </p>
                 </div>
-                <Switch.Root
-                  checked={activeLayersMode === "specific"}
-                  onCheckedChange={(checked) =>
-                    handleActiveLayersModeChange(checked ? "specific" : "all")
-                  }
-                  className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
-                >
-                  <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform" />
-                </Switch.Root>
+                <div className="flex-shrink-0">
+                  <Switch.Root
+                    checked={activeLayersMode === "specific"}
+                    onCheckedChange={(checked) =>
+                      handleActiveLayersModeChange(checked ? "specific" : "all")
+                    }
+                    className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
+                  >
+                    <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                  </Switch.Root>
+                </div>
               </div>
 
               {activeLayersMode === "specific" && (
@@ -542,7 +544,7 @@ export function TrackballPage() {
               </div>
 
               {/* Preset Buttons */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 {(scalingPresetType === "wheel"
                   ? WHEEL_PRESETS
                   : SCROLL_PRESETS
@@ -552,9 +554,9 @@ export function TrackballPage() {
                     onClick={() =>
                       handleScalingPreset(preset.multiplier, preset.divisor)
                     }
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      displayScalingMultiplier === preset.multiplier &&
-                      displayScalingDivisor === preset.divisor
+                    className={`px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      displayScalingMultiplier / displayScalingDivisor ===
+                      preset.multiplier / preset.divisor
                         ? "bg-[var(--color-electric)] text-white"
                         : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]"
                     }`}
@@ -580,13 +582,15 @@ export function TrackballPage() {
                   <span className="text-lg font-mono text-[var(--color-electric)]">
                     {displayRotation}°
                   </span>
-                  <Switch.Root
-                    checked={rotationEnabled}
-                    onCheckedChange={handleRotationEnabledChange}
-                    className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
-                  >
-                    <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform" />
-                  </Switch.Root>
+                  <div className="flex-shrink-0">
+                    <Switch.Root
+                      checked={rotationEnabled}
+                      onCheckedChange={handleRotationEnabledChange}
+                      className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
+                    >
+                      <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                    </Switch.Root>
+                  </div>
                 </div>
               </div>
 
@@ -639,15 +643,17 @@ export function TrackballPage() {
                     Constrain movement to a single axis for precision scrolling
                   </p>
                 </div>
-                <Switch.Root
-                  checked={
-                    displayAxisSnapMode !== AxisSnapMode.AXIS_SNAP_MODE_NONE
-                  }
-                  onCheckedChange={handleAxisSnapEnabledChange}
-                  className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
-                >
-                  <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform" />
-                </Switch.Root>
+                <div className="flex-shrink-0">
+                  <Switch.Root
+                    checked={
+                      displayAxisSnapMode !== AxisSnapMode.AXIS_SNAP_MODE_NONE
+                    }
+                    onCheckedChange={handleAxisSnapEnabledChange}
+                    className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
+                  >
+                    <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                  </Switch.Root>
+                </div>
               </div>
 
               {displayAxisSnapMode !== AxisSnapMode.AXIS_SNAP_MODE_NONE && (
@@ -795,13 +801,15 @@ export function TrackballPage() {
                       Reverse horizontal movement direction
                     </p>
                   </div>
-                  <Switch.Root
-                    checked={displayXInvert}
-                    onCheckedChange={handleXInvertChange}
-                    className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
-                  >
-                    <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform" />
-                  </Switch.Root>
+                  <div className="flex-shrink-0">
+                    <Switch.Root
+                      checked={displayXInvert}
+                      onCheckedChange={handleXInvertChange}
+                      className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
+                    >
+                      <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                    </Switch.Root>
+                  </div>
                 </div>
 
                 {/* Y Invert */}
@@ -814,13 +822,15 @@ export function TrackballPage() {
                       Reverse vertical movement direction
                     </p>
                   </div>
-                  <Switch.Root
-                    checked={displayYInvert}
-                    onCheckedChange={handleYInvertChange}
-                    className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
-                  >
-                    <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform" />
-                  </Switch.Root>
+                  <div className="flex-shrink-0">
+                    <Switch.Root
+                      checked={displayYInvert}
+                      onCheckedChange={handleYInvertChange}
+                      className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
+                    >
+                      <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                    </Switch.Root>
+                  </div>
                 </div>
               </div>
             </div>
@@ -847,13 +857,15 @@ export function TrackballPage() {
                       Map X/Y movement to horizontal/vertical scroll
                     </p>
                   </div>
-                  <Switch.Root
-                    checked={displayXyToScrollEnabled}
-                    onCheckedChange={handleXyToScrollEnabledChange}
-                    className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
-                  >
-                    <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform" />
-                  </Switch.Root>
+                  <div className="flex-shrink-0">
+                    <Switch.Root
+                      checked={displayXyToScrollEnabled}
+                      onCheckedChange={handleXyToScrollEnabledChange}
+                      className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
+                    >
+                      <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                    </Switch.Root>
+                  </div>
                 </div>
 
                 {/* XY Swap */}
@@ -866,13 +878,15 @@ export function TrackballPage() {
                       Swap X and Y axes
                     </p>
                   </div>
-                  <Switch.Root
-                    checked={displayXySwapEnabled}
-                    onCheckedChange={handleXySwapEnabledChange}
-                    className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
-                  >
-                    <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform" />
-                  </Switch.Root>
+                  <div className="flex-shrink-0">
+                    <Switch.Root
+                      checked={displayXySwapEnabled}
+                      onCheckedChange={handleXySwapEnabledChange}
+                      className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
+                    >
+                      <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                    </Switch.Root>
+                  </div>
                 </div>
               </div>
             </div>
@@ -888,13 +902,15 @@ export function TrackballPage() {
                     Auto-activate layer when trackball is in use
                   </p>
                 </div>
-                <Switch.Root
-                  checked={displayTempLayerEnabled}
-                  onCheckedChange={handleTempLayerEnabledChange}
-                  className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
-                >
-                  <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform" />
-                </Switch.Root>
+                <div className="flex-shrink-0">
+                  <Switch.Root
+                    checked={displayTempLayerEnabled}
+                    onCheckedChange={handleTempLayerEnabledChange}
+                    className="w-11 h-6 rounded-full relative data-[state=checked]:bg-[var(--color-electric)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-colors cursor-pointer"
+                  >
+                    <Switch.Thumb className="block w-5 h-5 rounded-full transition-transform data-[state=checked]:translate-x-5 translate-x-0.5 will-change-transform bg-white border border-[var(--color-border)]" />
+                  </Switch.Root>
+                </div>
               </div>
 
               {displayTempLayerEnabled && (
