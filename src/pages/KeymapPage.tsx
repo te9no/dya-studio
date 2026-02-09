@@ -203,7 +203,7 @@ export function KeymapPage() {
                 </span>
               )}
               <button
-                className="btn-ghost text-sm flex items-center gap-1.5"
+                className="btn-ghost text-sm flex items-center gap-1.5 flex-shrink-0"
                 onClick={handleDiscard}
                 disabled={
                   isDiscarding || !keymap.hasUnsavedChanges || keymap.isLoading
