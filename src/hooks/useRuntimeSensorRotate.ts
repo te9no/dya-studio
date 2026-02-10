@@ -425,12 +425,8 @@ export function useRuntimeSensorRotate(): UseRuntimeSensorRotateReturn {
       loadSensors();
       checkUnsavedChanges();
     }
-  }, [
-    subsystemIndex,
-    zmkApp?.state.connection,
-    loadSensors,
-    checkUnsavedChanges,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subsystemIndex, zmkApp?.state.connection]);
 
   // Reset state when disconnected
   useEffect(() => {

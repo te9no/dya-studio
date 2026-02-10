@@ -104,7 +104,7 @@ export function SensorRotationConfig({
 
       const updatedConfig: SensorLayerConfig = {
         ...currentConfig,
-        [direction]:
+        clockwise:
           direction === "clockwise"
             ? {
                 behaviorId: binding.behaviorId,
