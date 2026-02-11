@@ -118,7 +118,18 @@ const MOCK_BINDINGS: Map<number, LayerBindings[]> = new Map([
 export class RuntimeSensorRotateHandler {
   private callbacks: ((data: Uint8Array) => void)[] = [];
   private bindings: Map<number, LayerBindings[]> = new Map(
-    JSON.parse(JSON.stringify([...MOCK_BINDINGS])),
+    [...MOCK_BINDINGS].map(([key, value]) => [
+      key,
+      value.map((binding) => ({
+        layer: binding.layer,
+        cwBinding: binding.cwBinding
+          ? { ...binding.cwBinding }
+          : binding.cwBinding,
+        ccwBinding: binding.ccwBinding
+          ? { ...binding.ccwBinding }
+          : binding.ccwBinding,
+      })),
+    ]),
   );
 
   process(request: Request): Response {
