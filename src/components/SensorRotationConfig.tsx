@@ -15,6 +15,8 @@ import type { LayerBindings, Binding } from "../hooks/useRuntimeSensorRotate";
 import type { BehaviorDefinition } from "../hooks/useKeymap";
 import type { BehaviorBinding } from "../hooks/useKeymap";
 import { KeycodeSelector } from "./KeycodeSelector";
+import { formatBehaviorBinding } from "../lib/behaviorMetadata";
+import { getKeycodeByCode } from "../lib/keycodes";
 
 interface SensorRotationConfigProps {
   selectedLayerId: number;
@@ -56,9 +58,14 @@ export function SensorRotationConfig({
       }
       setSensorBindings(allBindings);
     };
-
+    console.log("Loading all sensor bindings");
     loadAllBindings();
-  }, [sensorRotate.sensors, sensorRotate.isAvailable, sensorRotate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    sensorRotate.sensors,
+    sensorRotate.isAvailable,
+    sensorRotate.getAllLayerBindings,
+  ]);
 
   // Get bindings for a specific sensor and layer
   const getBindingsForLayer = useCallback(
@@ -98,48 +105,35 @@ export function SensorRotationConfig({
       const { sensorIndex, direction } = editingConfig;
       const layerBindings = getBindingsForLayer(sensorIndex, selectedLayerId);
 
-      // Create new binding with tap_ms from current or default to 5ms
-      const tapMs =
-        layerBindings?.cwBinding?.tapMs ||
-        layerBindings?.ccwBinding?.tapMs ||
-        5;
-
-      const newBinding: Binding = {
-        behaviorId: binding.behaviorId,
-        param1: binding.param1,
-        param2: binding.param2,
-        tapMs,
-      };
-
-      // Determine cw and ccw bindings
-      const cwBinding =
-        direction === "clockwise"
-          ? newBinding
-          : (layerBindings?.cwBinding ?? {
-              behaviorId: 0,
-              param1: 0,
-              param2: 0,
-              tapMs,
-            });
-
-      const ccwBinding =
-        direction === "counterClockwise"
-          ? newBinding
-          : (layerBindings?.ccwBinding ?? {
-              behaviorId: 0,
-              param1: 0,
-              param2: 0,
-              tapMs,
-            });
-
-      // Send to device
-      const success = await sensorRotate.setLayerBindings(
-        sensorIndex,
-        selectedLayerId,
-        cwBinding,
-        ccwBinding,
-      );
-
+      let success = false;
+      let newBinding: Binding;
+      if (direction === "clockwise") {
+        newBinding = {
+          behaviorId: binding.behaviorId,
+          param1: binding.param1,
+          param2: binding.param2,
+          tapMs: layerBindings?.cwBinding?.tapMs || 5,
+        };
+        success = await sensorRotate.setLayerCwBindings(
+          sensorIndex,
+          selectedLayerId,
+          newBinding,
+        );
+      } else if (direction === "counterClockwise") {
+        newBinding = {
+          behaviorId: binding.behaviorId,
+          param1: binding.param1,
+          param2: binding.param2,
+          tapMs: layerBindings?.ccwBinding?.tapMs || 5,
+        };
+        success = await sensorRotate.setLayerCcwBindings(
+          sensorIndex,
+          selectedLayerId,
+          newBinding,
+        );
+      } else {
+        return;
+      }
       if (success) {
         // Update local state optimistically
         setSensorBindings((prev) => {
@@ -150,8 +144,12 @@ export function SensorRotationConfig({
           );
           updatedBindings.push({
             layer: selectedLayerId,
-            cwBinding,
-            ccwBinding,
+            cwBinding:
+              direction === "clockwise" ? newBinding : layerBindings?.cwBinding,
+            ccwBinding:
+              direction === "counterClockwise"
+                ? newBinding
+                : layerBindings?.cwBinding,
           });
           newBindings.set(sensorIndex, updatedBindings);
           return newBindings;
@@ -168,15 +166,19 @@ export function SensorRotationConfig({
   const getBindingDisplayName = useCallback(
     (binding: Binding | null | undefined): string => {
       if (!binding || binding.behaviorId === 0) {
-        return "None";
+        return "Trans";
       }
       const behavior = behaviors.get(binding.behaviorId);
       if (!behavior) {
         return `Behavior ${binding.behaviorId}`;
       }
-      return behavior.displayName;
+      return formatBehaviorBinding(binding, behavior, {
+        // Skip passing layers to displayShortName
+        layers: layers,
+        getKeycodeByCode: (code: number) => getKeycodeByCode(code) || null,
+      });
     },
-    [behaviors],
+    [behaviors, layers],
   );
 
   // Convert Binding to BehaviorBinding for KeycodeSelector
@@ -192,9 +194,15 @@ export function SensorRotationConfig({
   return (
     <>
       <div className="glass-card p-6">
-        <h3 className="text-sm font-medium text-[var(--color-text)] mb-4">
+        <h3 className="text-sm font-medium text-[var(--color-text)] mb-2">
           Rotary Encoder Configuration
         </h3>
+
+        <div className="mb-2">
+          <span className="text-xs text-[var(--color-text-muted)]">
+            The value is saved in real-time upon selection for now.
+          </span>
+        </div>
 
         {/* Sensors Grid */}
         <div className="flex flex-wrap gap-4">
@@ -230,60 +238,110 @@ export function SensorRotationConfig({
 
                 {/* Rotation Bindings */}
                 <div className="space-y-3">
-                  {/* Clockwise */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <IconRotateClockwise
-                        size={16}
-                        className="text-[var(--color-neon)]"
-                      />
-                      <span className="text-xs text-[var(--color-text-muted)]">
-                        Clockwise
-                      </span>
+                  <div className="flex gap-2">
+                    {/* Counter-clockwise */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <IconRotateClockwise2
+                          size={16}
+                          className="text-[var(--color-cyber)]"
+                          style={{ transform: "scaleX(-1)" }}
+                        />
+                        <span className="text-xs text-[var(--color-text-muted)]">
+                          Counter-clockwise
+                        </span>
+                      </div>
+                      <button
+                        className="w-full px-3 py-2 rounded bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm text-[var(--color-text-secondary)] transition-colors"
+                        onClick={() =>
+                          handleBindingClick(sensor.index, "counterClockwise")
+                        }
+                      >
+                        {getBindingDisplayName(ccwBinding)}
+                      </button>
                     </div>
-                    <button
-                      className="w-full px-3 py-2 rounded bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm text-[var(--color-text-secondary)] transition-colors"
-                      onClick={() =>
-                        handleBindingClick(sensor.index, "clockwise")
-                      }
-                    >
-                      {getBindingDisplayName(cwBinding)}
-                    </button>
-                  </div>
-
-                  {/* Counter-clockwise */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <IconRotateClockwise2
-                        size={16}
-                        className="text-[var(--color-cyber)]"
-                      />
-                      <span className="text-xs text-[var(--color-text-muted)]">
-                        Counter-clockwise
-                      </span>
+                    {/* Clockwise */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <IconRotateClockwise
+                          size={16}
+                          className="text-[var(--color-neon)]"
+                        />
+                        <span className="text-xs text-[var(--color-text-muted)]">
+                          Clockwise
+                        </span>
+                      </div>
+                      <button
+                        className="w-full px-3 py-2 rounded bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm text-[var(--color-text-secondary)] transition-colors"
+                        onClick={() =>
+                          handleBindingClick(sensor.index, "clockwise")
+                        }
+                      >
+                        {getBindingDisplayName(cwBinding)}
+                      </button>
                     </div>
-                    <button
-                      className="w-full px-3 py-2 rounded bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-left text-sm text-[var(--color-text-secondary)] transition-colors"
-                      onClick={() =>
-                        handleBindingClick(sensor.index, "counterClockwise")
-                      }
-                    >
-                      {getBindingDisplayName(ccwBinding)}
-                    </button>
                   </div>
 
                   {/* Tap Time */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-[var(--color-text-muted)]">
+                      <span className="text-xs text-[var(--color-text-muted)] flex-1">
                         Tap Time
                       </span>
-                      <span className="text-xs font-mono text-[var(--color-text-secondary)]">
-                        {cwBinding?.tapMs || ccwBinding?.tapMs || 5} ms
+                      {/* mobile: standard text size, tablet: small text size */}
+                      <input
+                        type="number"
+                        min={1}
+                        className="px-1 py-0.5 rounded text-base tablet:text-sm text-[var(--color-text-secondary)] bg-[var(--color-surface)] border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-electric)] text-right"
+                        value={cwBinding?.tapMs ?? ccwBinding?.tapMs ?? 5}
+                        step={50}
+                        disabled
+                        onChange={async (e) => {
+                          const newTapMs = Number(e.target.value);
+                          // Update both bindings for this sensor/layer
+                          if (cwBinding) {
+                            await sensorRotate.setLayerCwBindings(
+                              sensor.index,
+                              selectedLayerId,
+                              { ...cwBinding, tapMs: newTapMs },
+                            );
+                          }
+                          if (ccwBinding) {
+                            await sensorRotate.setLayerCcwBindings(
+                              sensor.index,
+                              selectedLayerId,
+                              { ...ccwBinding, tapMs: newTapMs },
+                            );
+                          }
+                          return; // TODO: support debounce time editing
+                          setSensorBindings((prev) => {
+                            const newBindings = new Map(prev);
+                            const sensorBindingsList =
+                              newBindings.get(sensor.index) ?? [];
+                            const updatedBindings = sensorBindingsList.filter(
+                              (b) => b.layer !== selectedLayerId,
+                            );
+                            updatedBindings.push({
+                              layer: selectedLayerId,
+                              cwBinding: cwBinding
+                                ? { ...cwBinding, tapMs: newTapMs }
+                                : undefined,
+                              ccwBinding: ccwBinding
+                                ? { ...ccwBinding, tapMs: newTapMs }
+                                : undefined,
+                            });
+                            newBindings.set(sensor.index, updatedBindings);
+                            return newBindings;
+                          });
+                        }}
+                      />
+                      <span className="ml-1 text-xs font-mono text-[var(--color-text-secondary)]">
+                        ms
                       </span>
                     </div>
                     <div className="text-xs text-[var(--color-text-muted)] opacity-70">
-                      Time between rotation triggers
+                      Time between rotation triggers (Edit is currently
+                      disabled)
                     </div>
                   </div>
                 </div>
@@ -315,14 +373,6 @@ export function SensorRotationConfig({
               </p>
             </div>
           )}
-
-        {/* Info */}
-        <div className="mt-4 p-3 rounded bg-[var(--color-border)] border border-[var(--color-border-hover)]">
-          <p className="text-xs text-[var(--color-text-muted)]">
-            Configure rotary encoder bindings for the selected layer. Click on a
-            binding to change its behavior.
-          </p>
-        </div>
       </div>
 
       {/* Behavior Selector Dialog */}

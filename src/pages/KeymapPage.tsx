@@ -9,6 +9,7 @@ import {
   IconPlus,
   IconTrash,
   IconRestore,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { ConnectionContext } from "../components/DeviceConnection";
@@ -477,11 +478,23 @@ export function KeymapPage() {
             {/* Sensor Rotation Configuration */}
             {!sensorRotate.isAvailable && (
               <div className="glass-card p-4 mb-4 border-yellow-500/20 bg-yellow-500/10 flex items-center gap-3">
-                <IconAlertCircle size={20} className="text-yellow-400" />
-                <p className="text-sm text-yellow-400">
+                <div className="p-2">
+                  <IconAlertTriangle size={24} />
+                </div>
+                <p className="text-sm">
                   Runtime sensor rotation subsystem is not available for your
-                  keyboard. Sensor configuration will not be displayed, but
-                  normal keymap editing works fine.
+                  keyboard. Rotary encoder configuration will not be displayed.
+                  <br />
+                  You can enable the feature by applying
+                  <a
+                    href="https://github.com/cormoran/zmk-behavior-runtime-sensor-rotate"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[var(--color-electric)] underline mx-1"
+                  >
+                    cormoran/zmk-behavior-runtime-sensor-rotate
+                  </a>
+                  in your firmware.
                 </p>
               </div>
             )}
@@ -497,7 +510,6 @@ export function KeymapPage() {
             )}
           </>
         )}
-
         {/* Info */}
         <div className="mt-8 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)]">
           <p className="text-xs text-[var(--color-text-muted)]">

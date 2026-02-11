@@ -17,14 +17,23 @@ export interface Binding {
   tapMs: number;
 }
 
-export interface SetLayerBindingsRequest {
+export interface SetLayerCwBindingRequest {
   sensorIndex: number;
   layer: number;
-  cwBinding: Binding | undefined;
-  ccwBinding: Binding | undefined;
+  binding: Binding | undefined;
 }
 
-export interface SetLayerBindingsResponse {
+export interface SetLayerCwBindingResponse {
+  success: boolean;
+}
+
+export interface SetLayerCcwBindingRequest {
+  sensorIndex: number;
+  layer: number;
+  binding: Binding | undefined;
+}
+
+export interface SetLayerCcwBindingResponse {
   success: boolean;
 }
 
@@ -55,7 +64,8 @@ export interface GetSensorsResponse {
 }
 
 export interface Request {
-  setLayerBindings?: SetLayerBindingsRequest | undefined;
+  setLayerCwBinding?: SetLayerCwBindingRequest | undefined;
+  setLayerCcwBinding?: SetLayerCcwBindingRequest | undefined;
   getAllLayerBindings?: GetAllLayerBindingsRequest | undefined;
   getSensors?: GetSensorsRequest | undefined;
 }
@@ -66,7 +76,8 @@ export interface ErrorResponse {
 
 export interface Response {
   error?: ErrorResponse | undefined;
-  setLayerBindings?: SetLayerBindingsResponse | undefined;
+  setLayerCwBinding?: SetLayerCwBindingResponse | undefined;
+  setLayerCcwBinding?: SetLayerCcwBindingResponse | undefined;
   getAllLayerBindings?: GetAllLayerBindingsResponse | undefined;
   getSensors?: GetSensorsResponse | undefined;
 }
@@ -153,31 +164,28 @@ export const Binding: MessageFns<Binding> = {
   },
 };
 
-function createBaseSetLayerBindingsRequest(): SetLayerBindingsRequest {
-  return { sensorIndex: 0, layer: 0, cwBinding: undefined, ccwBinding: undefined };
+function createBaseSetLayerCwBindingRequest(): SetLayerCwBindingRequest {
+  return { sensorIndex: 0, layer: 0, binding: undefined };
 }
 
-export const SetLayerBindingsRequest: MessageFns<SetLayerBindingsRequest> = {
-  encode(message: SetLayerBindingsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const SetLayerCwBindingRequest: MessageFns<SetLayerCwBindingRequest> = {
+  encode(message: SetLayerCwBindingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.sensorIndex !== 0) {
       writer.uint32(8).uint32(message.sensorIndex);
     }
     if (message.layer !== 0) {
       writer.uint32(16).uint32(message.layer);
     }
-    if (message.cwBinding !== undefined) {
-      Binding.encode(message.cwBinding, writer.uint32(26).fork()).join();
-    }
-    if (message.ccwBinding !== undefined) {
-      Binding.encode(message.ccwBinding, writer.uint32(34).fork()).join();
+    if (message.binding !== undefined) {
+      Binding.encode(message.binding, writer.uint32(26).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SetLayerBindingsRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): SetLayerCwBindingRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetLayerBindingsRequest();
+    const message = createBaseSetLayerCwBindingRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -202,15 +210,7 @@ export const SetLayerBindingsRequest: MessageFns<SetLayerBindingsRequest> = {
             break;
           }
 
-          message.cwBinding = Binding.decode(reader, reader.uint32());
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.ccwBinding = Binding.decode(reader, reader.uint32());
+          message.binding = Binding.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -222,39 +222,36 @@ export const SetLayerBindingsRequest: MessageFns<SetLayerBindingsRequest> = {
     return message;
   },
 
-  create(base?: DeepPartial<SetLayerBindingsRequest>): SetLayerBindingsRequest {
-    return SetLayerBindingsRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<SetLayerCwBindingRequest>): SetLayerCwBindingRequest {
+    return SetLayerCwBindingRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<SetLayerBindingsRequest>): SetLayerBindingsRequest {
-    const message = createBaseSetLayerBindingsRequest();
+  fromPartial(object: DeepPartial<SetLayerCwBindingRequest>): SetLayerCwBindingRequest {
+    const message = createBaseSetLayerCwBindingRequest();
     message.sensorIndex = object.sensorIndex ?? 0;
     message.layer = object.layer ?? 0;
-    message.cwBinding = (object.cwBinding !== undefined && object.cwBinding !== null)
-      ? Binding.fromPartial(object.cwBinding)
-      : undefined;
-    message.ccwBinding = (object.ccwBinding !== undefined && object.ccwBinding !== null)
-      ? Binding.fromPartial(object.ccwBinding)
+    message.binding = (object.binding !== undefined && object.binding !== null)
+      ? Binding.fromPartial(object.binding)
       : undefined;
     return message;
   },
 };
 
-function createBaseSetLayerBindingsResponse(): SetLayerBindingsResponse {
+function createBaseSetLayerCwBindingResponse(): SetLayerCwBindingResponse {
   return { success: false };
 }
 
-export const SetLayerBindingsResponse: MessageFns<SetLayerBindingsResponse> = {
-  encode(message: SetLayerBindingsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const SetLayerCwBindingResponse: MessageFns<SetLayerCwBindingResponse> = {
+  encode(message: SetLayerCwBindingResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.success !== false) {
       writer.uint32(8).bool(message.success);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SetLayerBindingsResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): SetLayerCwBindingResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetLayerBindingsResponse();
+    const message = createBaseSetLayerCwBindingResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -275,11 +272,129 @@ export const SetLayerBindingsResponse: MessageFns<SetLayerBindingsResponse> = {
     return message;
   },
 
-  create(base?: DeepPartial<SetLayerBindingsResponse>): SetLayerBindingsResponse {
-    return SetLayerBindingsResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<SetLayerCwBindingResponse>): SetLayerCwBindingResponse {
+    return SetLayerCwBindingResponse.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<SetLayerBindingsResponse>): SetLayerBindingsResponse {
-    const message = createBaseSetLayerBindingsResponse();
+  fromPartial(object: DeepPartial<SetLayerCwBindingResponse>): SetLayerCwBindingResponse {
+    const message = createBaseSetLayerCwBindingResponse();
+    message.success = object.success ?? false;
+    return message;
+  },
+};
+
+function createBaseSetLayerCcwBindingRequest(): SetLayerCcwBindingRequest {
+  return { sensorIndex: 0, layer: 0, binding: undefined };
+}
+
+export const SetLayerCcwBindingRequest: MessageFns<SetLayerCcwBindingRequest> = {
+  encode(message: SetLayerCcwBindingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.sensorIndex !== 0) {
+      writer.uint32(8).uint32(message.sensorIndex);
+    }
+    if (message.layer !== 0) {
+      writer.uint32(16).uint32(message.layer);
+    }
+    if (message.binding !== undefined) {
+      Binding.encode(message.binding, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetLayerCcwBindingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetLayerCcwBindingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.sensorIndex = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.layer = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.binding = Binding.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetLayerCcwBindingRequest>): SetLayerCcwBindingRequest {
+    return SetLayerCcwBindingRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetLayerCcwBindingRequest>): SetLayerCcwBindingRequest {
+    const message = createBaseSetLayerCcwBindingRequest();
+    message.sensorIndex = object.sensorIndex ?? 0;
+    message.layer = object.layer ?? 0;
+    message.binding = (object.binding !== undefined && object.binding !== null)
+      ? Binding.fromPartial(object.binding)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSetLayerCcwBindingResponse(): SetLayerCcwBindingResponse {
+  return { success: false };
+}
+
+export const SetLayerCcwBindingResponse: MessageFns<SetLayerCcwBindingResponse> = {
+  encode(message: SetLayerCcwBindingResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetLayerCcwBindingResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetLayerCcwBindingResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<SetLayerCcwBindingResponse>): SetLayerCcwBindingResponse {
+    return SetLayerCcwBindingResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SetLayerCcwBindingResponse>): SetLayerCcwBindingResponse {
+    const message = createBaseSetLayerCcwBindingResponse();
     message.success = object.success ?? false;
     return message;
   },
@@ -590,19 +705,27 @@ export const GetSensorsResponse: MessageFns<GetSensorsResponse> = {
 };
 
 function createBaseRequest(): Request {
-  return { setLayerBindings: undefined, getAllLayerBindings: undefined, getSensors: undefined };
+  return {
+    setLayerCwBinding: undefined,
+    setLayerCcwBinding: undefined,
+    getAllLayerBindings: undefined,
+    getSensors: undefined,
+  };
 }
 
 export const Request: MessageFns<Request> = {
   encode(message: Request, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.setLayerBindings !== undefined) {
-      SetLayerBindingsRequest.encode(message.setLayerBindings, writer.uint32(10).fork()).join();
+    if (message.setLayerCwBinding !== undefined) {
+      SetLayerCwBindingRequest.encode(message.setLayerCwBinding, writer.uint32(10).fork()).join();
+    }
+    if (message.setLayerCcwBinding !== undefined) {
+      SetLayerCcwBindingRequest.encode(message.setLayerCcwBinding, writer.uint32(18).fork()).join();
     }
     if (message.getAllLayerBindings !== undefined) {
-      GetAllLayerBindingsRequest.encode(message.getAllLayerBindings, writer.uint32(18).fork()).join();
+      GetAllLayerBindingsRequest.encode(message.getAllLayerBindings, writer.uint32(26).fork()).join();
     }
     if (message.getSensors !== undefined) {
-      GetSensorsRequest.encode(message.getSensors, writer.uint32(26).fork()).join();
+      GetSensorsRequest.encode(message.getSensors, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -619,7 +742,7 @@ export const Request: MessageFns<Request> = {
             break;
           }
 
-          message.setLayerBindings = SetLayerBindingsRequest.decode(reader, reader.uint32());
+          message.setLayerCwBinding = SetLayerCwBindingRequest.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -627,11 +750,19 @@ export const Request: MessageFns<Request> = {
             break;
           }
 
-          message.getAllLayerBindings = GetAllLayerBindingsRequest.decode(reader, reader.uint32());
+          message.setLayerCcwBinding = SetLayerCcwBindingRequest.decode(reader, reader.uint32());
           continue;
         }
         case 3: {
           if (tag !== 26) {
+            break;
+          }
+
+          message.getAllLayerBindings = GetAllLayerBindingsRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
             break;
           }
 
@@ -652,8 +783,11 @@ export const Request: MessageFns<Request> = {
   },
   fromPartial(object: DeepPartial<Request>): Request {
     const message = createBaseRequest();
-    message.setLayerBindings = (object.setLayerBindings !== undefined && object.setLayerBindings !== null)
-      ? SetLayerBindingsRequest.fromPartial(object.setLayerBindings)
+    message.setLayerCwBinding = (object.setLayerCwBinding !== undefined && object.setLayerCwBinding !== null)
+      ? SetLayerCwBindingRequest.fromPartial(object.setLayerCwBinding)
+      : undefined;
+    message.setLayerCcwBinding = (object.setLayerCcwBinding !== undefined && object.setLayerCcwBinding !== null)
+      ? SetLayerCcwBindingRequest.fromPartial(object.setLayerCcwBinding)
       : undefined;
     message.getAllLayerBindings = (object.getAllLayerBindings !== undefined && object.getAllLayerBindings !== null)
       ? GetAllLayerBindingsRequest.fromPartial(object.getAllLayerBindings)
@@ -712,7 +846,13 @@ export const ErrorResponse: MessageFns<ErrorResponse> = {
 };
 
 function createBaseResponse(): Response {
-  return { error: undefined, setLayerBindings: undefined, getAllLayerBindings: undefined, getSensors: undefined };
+  return {
+    error: undefined,
+    setLayerCwBinding: undefined,
+    setLayerCcwBinding: undefined,
+    getAllLayerBindings: undefined,
+    getSensors: undefined,
+  };
 }
 
 export const Response: MessageFns<Response> = {
@@ -720,14 +860,17 @@ export const Response: MessageFns<Response> = {
     if (message.error !== undefined) {
       ErrorResponse.encode(message.error, writer.uint32(10).fork()).join();
     }
-    if (message.setLayerBindings !== undefined) {
-      SetLayerBindingsResponse.encode(message.setLayerBindings, writer.uint32(18).fork()).join();
+    if (message.setLayerCwBinding !== undefined) {
+      SetLayerCwBindingResponse.encode(message.setLayerCwBinding, writer.uint32(18).fork()).join();
+    }
+    if (message.setLayerCcwBinding !== undefined) {
+      SetLayerCcwBindingResponse.encode(message.setLayerCcwBinding, writer.uint32(26).fork()).join();
     }
     if (message.getAllLayerBindings !== undefined) {
-      GetAllLayerBindingsResponse.encode(message.getAllLayerBindings, writer.uint32(26).fork()).join();
+      GetAllLayerBindingsResponse.encode(message.getAllLayerBindings, writer.uint32(34).fork()).join();
     }
     if (message.getSensors !== undefined) {
-      GetSensorsResponse.encode(message.getSensors, writer.uint32(34).fork()).join();
+      GetSensorsResponse.encode(message.getSensors, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -752,7 +895,7 @@ export const Response: MessageFns<Response> = {
             break;
           }
 
-          message.setLayerBindings = SetLayerBindingsResponse.decode(reader, reader.uint32());
+          message.setLayerCwBinding = SetLayerCwBindingResponse.decode(reader, reader.uint32());
           continue;
         }
         case 3: {
@@ -760,11 +903,19 @@ export const Response: MessageFns<Response> = {
             break;
           }
 
-          message.getAllLayerBindings = GetAllLayerBindingsResponse.decode(reader, reader.uint32());
+          message.setLayerCcwBinding = SetLayerCcwBindingResponse.decode(reader, reader.uint32());
           continue;
         }
         case 4: {
           if (tag !== 34) {
+            break;
+          }
+
+          message.getAllLayerBindings = GetAllLayerBindingsResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
             break;
           }
 
@@ -788,8 +939,11 @@ export const Response: MessageFns<Response> = {
     message.error = (object.error !== undefined && object.error !== null)
       ? ErrorResponse.fromPartial(object.error)
       : undefined;
-    message.setLayerBindings = (object.setLayerBindings !== undefined && object.setLayerBindings !== null)
-      ? SetLayerBindingsResponse.fromPartial(object.setLayerBindings)
+    message.setLayerCwBinding = (object.setLayerCwBinding !== undefined && object.setLayerCwBinding !== null)
+      ? SetLayerCwBindingResponse.fromPartial(object.setLayerCwBinding)
+      : undefined;
+    message.setLayerCcwBinding = (object.setLayerCcwBinding !== undefined && object.setLayerCcwBinding !== null)
+      ? SetLayerCcwBindingResponse.fromPartial(object.setLayerCcwBinding)
       : undefined;
     message.getAllLayerBindings = (object.getAllLayerBindings !== undefined && object.getAllLayerBindings !== null)
       ? GetAllLayerBindingsResponse.fromPartial(object.getAllLayerBindings)

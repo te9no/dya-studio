@@ -49,10 +49,14 @@ export interface UseRuntimeSensorRotateReturn {
   /** Get all layer bindings for a sensor */
   getAllLayerBindings: (sensorIndex: number) => Promise<LayerBindings[]>;
   /** Set bindings for a sensor on a specific layer */
-  setLayerBindings: (
+  setLayerCwBindings: (
     sensorIndex: number,
     layer: number,
     cwBinding: Binding,
+  ) => Promise<boolean>;
+  setLayerCcwBindings: (
+    sensorIndex: number,
+    layer: number,
     ccwBinding: Binding,
   ) => Promise<boolean>;
 }
@@ -170,11 +174,65 @@ export function useRuntimeSensorRotate(): UseRuntimeSensorRotateReturn {
     [zmkApp, subsystemIndex],
   );
 
-  const setLayerBindings = useCallback(
+  const setLayerCwBindings = useCallback(
     async (
       sensorIndex: number,
       layer: number,
       cwBinding: Binding,
+    ): Promise<boolean> => {
+      if (!zmkApp?.state.connection || subsystemIndex === undefined) {
+        setError("Not connected to device or subsystem not found");
+        return false;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystemIndex,
+        );
+
+        const request = Request.create({
+          setLayerCwBinding: {
+            sensorIndex,
+            layer,
+            binding: cwBinding,
+          },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+          if (resp.error) {
+            setError(resp.error.message);
+            return false;
+          }
+          if (resp.setLayerCwBinding) {
+            return resp.setLayerCwBinding.success;
+          }
+        }
+        return false;
+      } catch (err) {
+        console.error("Failed to set layer bindings:", err);
+        setError(
+          `Failed to set layer cw bindings: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [zmkApp, subsystemIndex],
+  );
+
+  const setLayerCcwBindings = useCallback(
+    async (
+      sensorIndex: number,
+      layer: number,
       ccwBinding: Binding,
     ): Promise<boolean> => {
       if (!zmkApp?.state.connection || subsystemIndex === undefined) {
@@ -192,11 +250,10 @@ export function useRuntimeSensorRotate(): UseRuntimeSensorRotateReturn {
         );
 
         const request = Request.create({
-          setLayerBindings: {
+          setLayerCcwBinding: {
             sensorIndex,
             layer,
-            cwBinding,
-            ccwBinding,
+            binding: ccwBinding,
           },
         });
 
@@ -209,15 +266,15 @@ export function useRuntimeSensorRotate(): UseRuntimeSensorRotateReturn {
             setError(resp.error.message);
             return false;
           }
-          if (resp.setLayerBindings) {
-            return resp.setLayerBindings.success;
+          if (resp.setLayerCcwBinding) {
+            return resp.setLayerCcwBinding.success;
           }
         }
         return false;
       } catch (err) {
         console.error("Failed to set layer bindings:", err);
         setError(
-          `Failed to set layer bindings: ${err instanceof Error ? err.message : "Unknown error"}`,
+          `Failed to set layer ccw bindings: ${err instanceof Error ? err.message : "Unknown error"}`,
         );
         return false;
       } finally {
@@ -231,16 +288,11 @@ export function useRuntimeSensorRotate(): UseRuntimeSensorRotateReturn {
   useEffect(() => {
     if (subsystemIndex !== undefined && zmkApp?.state.connection) {
       loadSensors();
-    }
-  }, [subsystemIndex, zmkApp?.state.connection, loadSensors]);
-
-  // Reset state when disconnected
-  useEffect(() => {
-    if (!zmkApp?.state.connection) {
+    } else {
       setSensors([]);
       setError(null);
     }
-  }, [zmkApp?.state.connection]);
+  }, [subsystemIndex, zmkApp?.state.connection, loadSensors]);
 
   return {
     isAvailable: subsystemIndex !== undefined,
@@ -249,6 +301,7 @@ export function useRuntimeSensorRotate(): UseRuntimeSensorRotateReturn {
     error,
     loadSensors,
     getAllLayerBindings,
-    setLayerBindings,
+    setLayerCwBindings,
+    setLayerCcwBindings,
   };
 }
