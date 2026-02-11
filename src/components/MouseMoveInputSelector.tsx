@@ -114,7 +114,7 @@ export function MouseMoveInputSelector({
               placeholder="0"
             />
             <p className="text-xs text-[var(--color-text-muted)] mt-1">
-              {isScroll ? "- = Left, + = Right" : "- = Left, + = Right"}
+              - = Left, + = Right
             </p>
           </div>
           <div>
@@ -135,6 +135,7 @@ export function MouseMoveInputSelector({
               placeholder="0"
             />
             <p className="text-xs text-[var(--color-text-muted)] mt-1">
+              {/* Note: Scroll Y is inverted in ZMK (positive = up, negative = down) */}
               {isScroll ? "- = Down, + = Up" : "- = Up, + = Down"}
             </p>
           </div>
