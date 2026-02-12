@@ -149,7 +149,7 @@ export function SensorRotationConfig({
             ccwBinding:
               direction === "counterClockwise"
                 ? newBinding
-                : layerBindings?.cwBinding,
+                : layerBindings?.ccwBinding,
           });
           newBindings.set(sensorIndex, updatedBindings);
           return newBindings;
@@ -295,7 +295,6 @@ export function SensorRotationConfig({
                         className="px-1 py-0.5 rounded text-base tablet:text-sm text-[var(--color-text-secondary)] bg-[var(--color-surface)] border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-electric)] text-right"
                         value={cwBinding?.tapMs ?? ccwBinding?.tapMs ?? 5}
                         step={50}
-                        disabled
                         onChange={async (e) => {
                           const newTapMs = Number(e.target.value);
                           // Update both bindings for this sensor/layer
@@ -313,7 +312,6 @@ export function SensorRotationConfig({
                               { ...ccwBinding, tapMs: newTapMs },
                             );
                           }
-                          return; // TODO: support debounce time editing
                           setSensorBindings((prev) => {
                             const newBindings = new Map(prev);
                             const sensorBindingsList =

@@ -1095,22 +1095,112 @@ export const MOUSE_KEYCODES = [
   { value: 16, label: "Button 5", shortLabel: "BTN5" },
 ] as const;
 
+// =============================================================================
+// Mouse Movement and Scroll
+// =============================================================================
+
 /**
- * Mouse movement directions
+ * Default mouse movement value (pixels per update)
+ * ref: ZMK's app/include/dt-bindings/zmk/pointing.h
+ */
+export const ZMK_POINTING_DEFAULT_MOVE_VAL = 600;
+
+/**
+ * Default mouse scroll value (units per update)
+ * ref: ZMK's app/include/dt-bindings/zmk/pointing.h
+ */
+export const ZMK_POINTING_DEFAULT_SCRL_VAL = 100;
+
+/**
+ * Mouse movement/scroll parameter encoding/decoding utilities
+ *
+ * ZMK uses a 32-bit packed format for mouse movement and scroll:
+ * - Bits 0-15 (lower 16 bits): Y-axis delta (vertical movement)
+ * - Bits 16-31 (upper 16 bits): X-axis delta (horizontal movement)
+ *
+ * Encoding macros from pointing.h:
+ * - MOVE_Y(vert) = (vert) & 0xFFFF
+ * - MOVE_X(hor) = ((hor) & 0xFFFF) << 16
+ * - MOVE(hor, vert) = MOVE_X(hor) + MOVE_Y(vert)
+ *
+ * ref: https://github.com/zmkfirmware/zmk/blob/main/app/include/dt-bindings/zmk/pointing.h
+ */
+
+/**
+ * Encode both X and Y deltas into a single 32-bit value
+ */
+export function encodeMouseMove(x: number, y: number): number {
+  const buffer = new ArrayBuffer(4);
+  const uint32View = new Uint32Array(buffer);
+  const int16View = new Int16Array(buffer);
+
+  int16View[1] = x;
+  int16View[0] = y;
+  return uint32View[0];
+}
+
+/**
+ * Decode both X and Y deltas from a single 32-bit value
+ */
+export function decodeMouseMove(encoded: number): { x: number; y: number } {
+  const buffer = new ArrayBuffer(4);
+  const uint32View = new Uint32Array(buffer);
+  const int16View = new Int16Array(buffer);
+
+  uint32View[0] = encoded;
+
+  return { x: int16View[1], y: int16View[0] };
+}
+
+/**
+ * Preset mouse movement values matching ZMK's defines
  */
 export const MOUSE_MOVEMENTS = [
-  { value: 0, label: "Move Up", shortLabel: "↑" },
-  { value: 1, label: "Move Down", shortLabel: "↓" },
-  { value: 2, label: "Move Left", shortLabel: "←" },
-  { value: 3, label: "Move Right", shortLabel: "→" },
+  {
+    value: encodeMouseMove(0, -ZMK_POINTING_DEFAULT_MOVE_VAL),
+    label: "Move Up",
+    shortLabel: "↑",
+  },
+  {
+    value: encodeMouseMove(0, ZMK_POINTING_DEFAULT_MOVE_VAL),
+    label: "Move Down",
+    shortLabel: "↓",
+  },
+  {
+    value: encodeMouseMove(-ZMK_POINTING_DEFAULT_MOVE_VAL, 0),
+    label: "Move Left",
+    shortLabel: "←",
+  },
+  {
+    value: encodeMouseMove(ZMK_POINTING_DEFAULT_MOVE_VAL, 0),
+    label: "Move Right",
+    shortLabel: "→",
+  },
 ] as const;
 
 /**
- * Mouse scroll directions
+ * Preset mouse scroll values matching ZMK's defines
+ * Note: In ZMK, scroll Y is inverted (positive = up, negative = down)
  */
 export const MOUSE_SCROLLS = [
-  { value: 0, label: "Scroll Up", shortLabel: "↑" },
-  { value: 1, label: "Scroll Down", shortLabel: "↓" },
-  { value: 2, label: "Scroll Left", shortLabel: "←" },
-  { value: 3, label: "Scroll Right", shortLabel: "→" },
+  {
+    value: encodeMouseMove(0, ZMK_POINTING_DEFAULT_SCRL_VAL),
+    label: "Scroll Up",
+    shortLabel: "↑",
+  },
+  {
+    value: encodeMouseMove(0, -ZMK_POINTING_DEFAULT_SCRL_VAL),
+    label: "Scroll Down",
+    shortLabel: "↓",
+  },
+  {
+    value: encodeMouseMove(-ZMK_POINTING_DEFAULT_SCRL_VAL, 0),
+    label: "Scroll Left",
+    shortLabel: "←",
+  },
+  {
+    value: encodeMouseMove(ZMK_POINTING_DEFAULT_SCRL_VAL, 0),
+    label: "Scroll Right",
+    shortLabel: "→",
+  },
 ] as const;
