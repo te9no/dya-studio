@@ -21,7 +21,7 @@ interface MouseMoveInputSelectorProps {
   /** Current encoded value (32-bit packed X/Y) */
   value: number;
   /** Callback when value changes */
-  onChange: (value: number) => void;
+  onChange: (value: number, shouldNotClose?: boolean) => void;
   /** Whether this is for scroll (true) or move (false) */
   isScroll?: boolean;
 }
@@ -49,7 +49,7 @@ export function MouseMoveInputSelector({
     const input = e.target.value;
     const num = parseInt(input, 10);
     if (!isNaN(num) && num >= -32768 && num <= 32767) {
-      onChange(encodeMouseMove(num, decoded.y));
+      onChange(encodeMouseMove(num, decoded.y), true);
     }
   };
 
@@ -58,7 +58,7 @@ export function MouseMoveInputSelector({
     const input = e.target.value;
     const num = parseInt(input, 10);
     if (!isNaN(num) && num >= -32768 && num <= 32767) {
-      onChange(encodeMouseMove(decoded.x, num));
+      onChange(encodeMouseMove(decoded.x, num), true);
     }
   };
 

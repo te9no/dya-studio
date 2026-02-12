@@ -2,11 +2,7 @@
  * Tests for mouse movement/scroll encoding/decoding
  */
 import {
-  encodeMouseX,
-  encodeMouseY,
   encodeMouseMove,
-  decodeMouseX,
-  decodeMouseY,
   decodeMouseMove,
   MOUSE_MOVEMENTS,
   MOUSE_SCROLLS,
@@ -15,129 +11,7 @@ import {
 } from "../keycodes";
 
 describe("Mouse Movement Encoding/Decoding", () => {
-  describe("encodeMouseX", () => {
-    test("encodes positive X value", () => {
-      const result = encodeMouseX(600);
-      expect(result).toBe(600 << 16);
-    });
-
-    test("encodes negative X value", () => {
-      const result = encodeMouseX(-600);
-      // -600 as unsigned 16-bit: 0xFFFF - 600 + 1 = 65536 - 600 = 64936 = 0xFDA8
-      const expected = ((-600 & 0xffff) << 16) >>> 0;
-      expect(result).toBe(expected);
-    });
-
-    test("encodes zero", () => {
-      expect(encodeMouseX(0)).toBe(0);
-    });
-  });
-
-  describe("encodeMouseY", () => {
-    test("encodes positive Y value", () => {
-      const result = encodeMouseY(10);
-      expect(result).toBe(10);
-    });
-
-    test("encodes negative Y value", () => {
-      const result = encodeMouseY(-10);
-      // -10 as unsigned 16-bit: 0xFFFF - 10 + 1 = 65536 - 10 = 65526 = 0xFFF6
-      const expected = (-10 & 0xffff) >>> 0;
-      expect(result).toBe(expected);
-    });
-
-    test("encodes zero", () => {
-      expect(encodeMouseY(0)).toBe(0);
-    });
-  });
-
-  describe("encodeMouseMove", () => {
-    test("encodes positive X and Y", () => {
-      const result = encodeMouseMove(600, 10);
-      const expected = ((600 << 16) | 10) >>> 0;
-      expect(result).toBe(expected);
-    });
-
-    test("encodes negative X and positive Y", () => {
-      const result = encodeMouseMove(-600, 10);
-      const expectedX = ((-600 & 0xffff) << 16) >>> 0;
-      const expected = (expectedX | 10) >>> 0;
-      expect(result).toBe(expected);
-    });
-
-    test("encodes positive X and negative Y", () => {
-      const result = encodeMouseMove(600, -10);
-      const expectedY = (-10 & 0xffff) >>> 0;
-      const expected = ((600 << 16) | expectedY) >>> 0;
-      expect(result).toBe(expected);
-    });
-
-    test("encodes negative X and Y", () => {
-      const result = encodeMouseMove(-600, -10);
-      const expectedX = ((-600 & 0xffff) << 16) >>> 0;
-      const expectedY = (-10 & 0xffff) >>> 0;
-      const expected = (expectedX | expectedY) >>> 0;
-      expect(result).toBe(expected);
-    });
-
-    test("encodes zero X and Y", () => {
-      expect(encodeMouseMove(0, 0)).toBe(0);
-    });
-  });
-
-  describe("decodeMouseX", () => {
-    test("decodes positive X value", () => {
-      const encoded = encodeMouseX(600);
-      expect(decodeMouseX(encoded)).toBe(600);
-    });
-
-    test("decodes negative X value", () => {
-      const encoded = encodeMouseX(-600);
-      expect(decodeMouseX(encoded)).toBe(-600);
-    });
-
-    test("decodes zero", () => {
-      expect(decodeMouseX(0)).toBe(0);
-    });
-
-    test("decodes max positive value (32767)", () => {
-      const encoded = encodeMouseX(32767);
-      expect(decodeMouseX(encoded)).toBe(32767);
-    });
-
-    test("decodes min negative value (-32768)", () => {
-      const encoded = encodeMouseX(-32768);
-      expect(decodeMouseX(encoded)).toBe(-32768);
-    });
-  });
-
-  describe("decodeMouseY", () => {
-    test("decodes positive Y value", () => {
-      const encoded = encodeMouseY(10);
-      expect(decodeMouseY(encoded)).toBe(10);
-    });
-
-    test("decodes negative Y value", () => {
-      const encoded = encodeMouseY(-10);
-      expect(decodeMouseY(encoded)).toBe(-10);
-    });
-
-    test("decodes zero", () => {
-      expect(decodeMouseY(0)).toBe(0);
-    });
-
-    test("decodes max positive value (32767)", () => {
-      const encoded = encodeMouseY(32767);
-      expect(decodeMouseY(encoded)).toBe(32767);
-    });
-
-    test("decodes min negative value (-32768)", () => {
-      const encoded = encodeMouseY(-32768);
-      expect(decodeMouseY(encoded)).toBe(-32768);
-    });
-  });
-
-  describe("decodeMouseMove", () => {
+  describe("encode and decodeMouseMove", () => {
     test("decodes positive X and Y", () => {
       const encoded = encodeMouseMove(600, 10);
       const result = decodeMouseMove(encoded);

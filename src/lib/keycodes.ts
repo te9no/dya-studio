@@ -1109,7 +1109,7 @@ export const ZMK_POINTING_DEFAULT_MOVE_VAL = 600;
  * Default mouse scroll value (units per update)
  * ref: ZMK's app/include/dt-bindings/zmk/pointing.h
  */
-export const ZMK_POINTING_DEFAULT_SCRL_VAL = 10;
+export const ZMK_POINTING_DEFAULT_SCRL_VAL = 100;
 
 /**
  * Mouse movement/scroll parameter encoding/decoding utilities
@@ -1127,56 +1127,29 @@ export const ZMK_POINTING_DEFAULT_SCRL_VAL = 10;
  */
 
 /**
- * Encode X-axis delta into the upper 16 bits
- */
-export function encodeMouseX(x: number): number {
-  return ((x & 0xffff) << 16) >>> 0;
-}
-
-/**
- * Encode Y-axis delta into the lower 16 bits
- */
-export function encodeMouseY(y: number): number {
-  return (y & 0xffff) >>> 0;
-}
-
-/**
  * Encode both X and Y deltas into a single 32-bit value
  */
 export function encodeMouseMove(x: number, y: number): number {
-  return (encodeMouseX(x) | encodeMouseY(y)) >>> 0;
-}
+  const buffer = new ArrayBuffer(4);
+  const uint32View = new Uint32Array(buffer);
+  const int16View = new Int16Array(buffer);
 
-/**
- * Decode X-axis delta from the upper 16 bits
- * Returns signed 16-bit value
- */
-export function decodeMouseX(encoded: number): number {
-  // Extract upper 16 bits and convert to signed int16
-  const unsigned = (encoded >>> 16) & 0xffff;
-  // Convert unsigned to signed (two's complement)
-  return unsigned > 0x7fff ? unsigned - 0x10000 : unsigned;
-}
-
-/**
- * Decode Y-axis delta from the lower 16 bits
- * Returns signed 16-bit value
- */
-export function decodeMouseY(encoded: number): number {
-  // Extract lower 16 bits and convert to signed int16
-  const unsigned = encoded & 0xffff;
-  // Convert unsigned to signed (two's complement)
-  return unsigned > 0x7fff ? unsigned - 0x10000 : unsigned;
+  int16View[1] = x;
+  int16View[0] = y;
+  return uint32View[0];
 }
 
 /**
  * Decode both X and Y deltas from a single 32-bit value
  */
 export function decodeMouseMove(encoded: number): { x: number; y: number } {
-  return {
-    x: decodeMouseX(encoded),
-    y: decodeMouseY(encoded),
-  };
+  const buffer = new ArrayBuffer(4);
+  const uint32View = new Uint32Array(buffer);
+  const int16View = new Int16Array(buffer);
+
+  uint32View[0] = encoded;
+
+  return { x: int16View[1], y: int16View[0] };
 }
 
 /**
