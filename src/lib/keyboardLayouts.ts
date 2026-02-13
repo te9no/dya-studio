@@ -181,9 +181,14 @@ export const KEYBOARD_LAYOUT_STORAGE_KEY = "keyboardLayout";
  * Get keyboard layout from localStorage, or return default
  */
 export function getSavedKeyboardLayout(): KeyboardLayoutType {
-  const saved = localStorage.getItem(KEYBOARD_LAYOUT_STORAGE_KEY);
-  if (saved === "US" || saved === "JIS") {
-    return saved;
+  try {
+    const saved = localStorage.getItem(KEYBOARD_LAYOUT_STORAGE_KEY);
+    if (saved === "US" || saved === "JIS") {
+      return saved;
+    }
+  } catch (error) {
+    // localStorage might not be available in some environments
+    console.warn("Failed to read keyboard layout from localStorage:", error);
   }
   return DEFAULT_KEYBOARD_LAYOUT;
 }
@@ -192,5 +197,10 @@ export function getSavedKeyboardLayout(): KeyboardLayoutType {
  * Save keyboard layout to localStorage
  */
 export function saveKeyboardLayout(layout: KeyboardLayoutType): void {
-  localStorage.setItem(KEYBOARD_LAYOUT_STORAGE_KEY, layout);
+  try {
+    localStorage.setItem(KEYBOARD_LAYOUT_STORAGE_KEY, layout);
+  } catch (error) {
+    // localStorage might be disabled or quota exceeded
+    console.warn("Failed to save keyboard layout to localStorage:", error);
+  }
 }
