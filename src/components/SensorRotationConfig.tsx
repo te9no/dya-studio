@@ -245,7 +245,7 @@ export function SensorRotationConfig({
         });
 
         tapTimeTimersRef.current.delete(sensorIndex);
-      }, 1000); // 1 second debounce
+      }, 3000); // 3 second debounce
 
       tapTimeTimersRef.current.set(sensorIndex, timer);
     },
@@ -389,7 +389,7 @@ export function SensorRotationConfig({
                           ccwBinding?.tapMs ??
                           5
                         }
-                        step={50}
+                        step={5}
                         onChange={(e) => {
                           const newTapMs = Number(e.target.value);
                           handleTapTimeChange(sensor.index, newTapMs);
@@ -399,11 +399,11 @@ export function SensorRotationConfig({
                         ms
                       </span>
                     </div>
-                    <div className="text-xs text-[var(--color-text-muted)] opacity-70">
-                      Time between rotation triggers
+                    <div className="text-xs text-[var(--color-text-muted)] opacity-70 flex items-center gap-1 justify-between my-2">
+                      <span>Time between rotation triggers</span>
                       {pendingTapTimes.has(sensor.index) && (
                         <span className="text-[var(--color-electric)] ml-1">
-                          (pending...)
+                          pending to save...
                         </span>
                       )}
                     </div>

@@ -103,8 +103,8 @@ describe("SensorRotationConfig", () => {
       expect(mockSetLayerCwBindings).not.toHaveBeenCalled();
       expect(mockSetLayerCcwBindings).not.toHaveBeenCalled();
 
-      // Wait for debounce (1 second)
-      jest.advanceTimersByTime(1000);
+      // Wait for debounce (3 seconds)
+      jest.advanceTimersByTime(3000);
 
       // Now API should be called
       await waitFor(() => {
@@ -165,10 +165,10 @@ describe("SensorRotationConfig", () => {
       await user.type(tapTimeInput, "50");
 
       // Should show pending indicator
-      expect(screen.getByText(/pending\.\.\./i)).toBeInTheDocument();
+      expect(screen.getByText(/pending/i)).toBeInTheDocument();
 
       // Advance timers to complete debounce
-      jest.advanceTimersByTime(1000);
+      jest.advanceTimersByTime(3000);
 
       // Wait for the update to complete
       await waitFor(() => {
@@ -177,7 +177,7 @@ describe("SensorRotationConfig", () => {
 
       // Pending indicator should be gone
       await waitFor(() => {
-        expect(screen.queryByText(/pending\.\.\./i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/pending/i)).not.toBeInTheDocument();
       });
     });
 
@@ -223,20 +223,20 @@ describe("SensorRotationConfig", () => {
       await user.type(tapTimeInput, "10");
 
       // Advance timer partially
-      jest.advanceTimersByTime(500);
+      jest.advanceTimersByTime(1500);
 
       // Second change before debounce completes
       await user.clear(tapTimeInput);
       await user.type(tapTimeInput, "20");
 
-      // Advance another 500ms (total 1000ms from first change, but only 500ms from second)
-      jest.advanceTimersByTime(500);
+      // Advance another 1500ms (total 3000ms from first change, but only 1500ms from second)
+      jest.advanceTimersByTime(1500);
 
       // API should not be called yet
       expect(mockSetLayerCwBindings).not.toHaveBeenCalled();
 
-      // Advance another 500ms to complete the second debounce
-      jest.advanceTimersByTime(500);
+      // Advance another 1500ms to complete the second debounce
+      jest.advanceTimersByTime(1500);
 
       // Now API should be called only once with the final value
       await waitFor(() => {
@@ -303,7 +303,7 @@ describe("SensorRotationConfig", () => {
       await user.type(tapTimeInputs[1], "20");
 
       // Advance timers
-      jest.advanceTimersByTime(1000);
+      jest.advanceTimersByTime(3000);
 
       // Both should be called with their respective values
       await waitFor(() => {
