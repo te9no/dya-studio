@@ -50,7 +50,9 @@ export function SensorRotationConfig({
   const [pendingTapTimes, setPendingTapTimes] = useState<Map<number, number>>(
     new Map(),
   );
-  const tapTimeTimersRef = useRef<Map<number, number>>(new Map());
+  const tapTimeTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
 
   // Cleanup timers on unmount
   useEffect(() => {
