@@ -87,6 +87,12 @@ const JIS_LAYOUT_MAPPINGS: KeycodeLayoutMapping[] = [
     aliases: ["Hankaku", "Zenkaku", "Halfwidth/Fullwidth"],
   },
   {
+    code: 0x2d,
+    displayName: "-=", // US: -_
+    name: "Minus",
+    aliases: ["Minus", "Equal"],
+  },
+  {
     code: 0x2e,
     displayName: "^~", // US: =+
     name: "Caret",
