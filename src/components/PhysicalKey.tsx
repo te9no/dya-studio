@@ -6,7 +6,15 @@
  */
 import { useState, useMemo } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { IconRotateClockwise } from "@tabler/icons-react";
+import {
+  IconArrowBigUp,
+  IconBrandWindows,
+  IconChevronUp,
+  IconCommand,
+  IconOption,
+  IconRotateClockwise,
+  IconSpace,
+} from "@tabler/icons-react";
 import type { KeyPhysicalAttrs, BehaviorBinding } from "../hooks/useKeymap";
 
 // Base unit size for 1U key in pixels at scale 1.0
@@ -110,6 +118,7 @@ export function PhysicalKey({
       {/* Display Name */}
       <span
         className={`
+            flex items-center justify-center
           font-medium text-center leading-tight break-words line-clamp-2
           ${
             isModified ? "text-[var(--color-neon)]" : "text-[var(--color-text)]"
@@ -118,7 +127,7 @@ export function PhysicalKey({
         style={{ fontSize: `${fontSize}px` }}
         title={displayName}
       >
-        {displayName || "—"}
+        {iconReplace(displayName) || "—"}
       </span>
 
       {/* Modified indicator */}
@@ -188,5 +197,66 @@ export function PhysicalKey({
         </Tooltip.Portal>
       </Tooltip.Root>
     </Tooltip.Provider>
+  );
+}
+
+const isWindows = navigator.userAgent.includes("Windows");
+const IconComponents = {
+  IconCommand: isWindows ? IconBrandWindows : IconCommand,
+  IconControl: IconChevronUp,
+  IconShift: IconArrowBigUp,
+  IconAlt: IconOption,
+  IconSpace: IconSpace,
+};
+const IconMap: Record<keyof typeof IconComponents, string[]> = {
+  IconCommand: ["LGui", "RGui"],
+  IconControl: ["LCtrl", "RCtrl"],
+  IconShift: ["LShift", "RShift"],
+  IconAlt: ["LAlt", "RAlt"],
+  IconSpace: ["Space"],
+};
+const TermToIcon: Record<string, keyof typeof IconComponents> = Object.entries(
+  IconMap,
+).reduce((acc: Record<string, keyof typeof IconComponents>, [icon, terms]) => {
+  terms.forEach((term) => {
+    acc[term] = icon as keyof typeof IconComponents;
+  });
+  return acc;
+}, {});
+
+function iconReplace(str: string): React.ReactNode {
+  const splits = str.split(" ");
+  return (
+    <>
+      {splits
+        .map((sub) => {
+          if (TermToIcon[sub]) {
+            const IconComponent = IconComponents[TermToIcon[sub]];
+
+            return (
+              <IconComponent
+                key={sub}
+                width={splits.length > 1 ? "1em" : "1.5em"}
+              />
+            );
+          }
+          return sub;
+        })
+        .reduce(
+          (acc, val) => {
+            if (
+              acc.length > 0 &&
+              typeof val === "string" &&
+              typeof acc[acc.length - 1] === "string"
+            ) {
+              acc[acc.length - 1] += " " + val;
+            } else {
+              acc.push(val);
+            }
+            return acc;
+          },
+          [] as (string | React.ReactNode)[],
+        )}
+    </>
   );
 }

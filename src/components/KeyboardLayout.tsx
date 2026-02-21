@@ -141,11 +141,12 @@ export function KeyboardLayout({
       if (!binding) return "—";
       const behavior = behaviors.get(binding.behaviorId) || null;
       return formatBehaviorBinding(binding, behavior, {
-        // Skip passing layers to displayShortName
+        shortFormat: true,
+        layers: layers,
         keyboardLayout,
       });
     },
-    [behaviors, keyboardLayout],
+    [behaviors, layers, keyboardLayout],
   );
 
   const getKeyLongDisplayName = useCallback(

@@ -12,22 +12,12 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { IconRestore, IconX } from "@tabler/icons-react";
-import {
-  MOUSE_KEYCODES,
-  MOUSE_MOVEMENTS,
-  MOUSE_SCROLLS,
-  NO_PARAM_VALUE,
-  formatKeycodeWithModifiers,
-  decodeMouseMove,
-} from "../lib/keycodes";
+import { MOUSE_KEYCODES } from "../lib/keycodes";
 import {
   getBehaviorMetadata,
-  getBehaviorParamOptions,
-  getBehaviorParamInfo,
-  hasParam1,
-  hasParam2,
-  type ParamType,
   formatBehaviorParam,
+  filterMatchingBehaviorValueDescriptions,
+  type BehaviorMetadata,
 } from "../lib/behaviorMetadata";
 import type { BehaviorBinding, BehaviorDefinition } from "../hooks/useKeymap";
 import { BehaviorDropdown } from "./BehaviorDropdown";
@@ -36,6 +26,7 @@ import { KeycodeValueSelector } from "./KeycodeValueSelector";
 import { RangeValueSelector } from "./RangeValueSelector";
 import { MouseMoveInputSelector } from "./MouseMoveInputSelector";
 import { type KeyboardLayoutType } from "../lib/keyboardLayouts";
+import { BehaviorParameterValueDescription } from "@zmkfirmware/zmk-studio-ts-client/behaviors";
 
 // =============================================================================
 // Types
@@ -47,10 +38,12 @@ import { type KeyboardLayoutType } from "../lib/keyboardLayouts";
  */
 interface SelectedBehaviorInfo {
   behavior: BehaviorDefinition;
-  needsParam1: boolean;
-  needsParam2: boolean;
-  param1Type?: ParamType;
-  param2Type?: ParamType;
+  // metadata defined in DYA Studio for overriding values defined in ZMK firmware
+  overrideMetadata: BehaviorMetadata | null;
+  // List of valid value descriptions for param1
+  param1Descriptions: BehaviorParameterValueDescription[];
+  // List of valid value descriptions for param2, which is filtered based on param1 value
+  param2Descriptions: BehaviorParameterValueDescription[];
 }
 
 interface KeycodeSelectorProps {
@@ -71,135 +64,163 @@ interface KeycodeSelectorProps {
 /**
  * Get human-readable label for a parameter type
  */
-function getParamTypeLabel(paramType: ParamType | undefined): string {
-  switch (paramType) {
-    case "keycode":
-      return "Keycode";
-    case "layer":
-      return "Layer";
-    case "bt_command":
-      return "BT Command";
-    case "out_command":
-      return "Output";
-    case "mouse_keycode":
-      return "Mouse Button";
-    case "mouse_movement":
-      return "Direction";
-    case "mouse_scroll":
-      return "Scroll";
-    case "number":
-      return "Value";
-    default:
-      return "Parameter";
+function getParamTypeLabel(
+  behaviorInfo: SelectedBehaviorInfo,
+  paramNumber: 1 | 2,
+): string {
+  const overrideMeta = behaviorInfo.overrideMetadata;
+  const overrideType =
+    paramNumber === 1 ? overrideMeta?.param1Type : overrideMeta?.param2Type;
+  // From DYA Studio override metadata
+  if (overrideType) {
+    switch (overrideType) {
+      case "mouse_keycode":
+        return "Mouse Button";
+      case "mouse_movement":
+      case "mouse_scroll":
+        return "Pointer movement";
+    }
   }
+  // From firmware metadata
+  const descriptions =
+    paramNumber === 1
+      ? behaviorInfo.param1Descriptions
+      : behaviorInfo.param2Descriptions;
+  // NOTE: assuming all descriptions have the same type
+  if (descriptions.length > 0) {
+    if (descriptions[0].constant !== undefined) {
+      return "Constant";
+    } else if (descriptions[0].range !== undefined) {
+      return "Range";
+    } else if (descriptions[0].hidUsage !== undefined) {
+      return "Keycode";
+    } else if (descriptions[0].layerId !== undefined) {
+      return "Layer";
+    }
+  }
+  return "Unknown Type";
 }
 
 /**
  * Get description for a parameter type
  */
-function getParamTypeDescription(paramType: ParamType | undefined): string {
-  switch (paramType) {
-    case "keycode":
-      return "Select a keycode with optional modifiers";
-    case "layer":
-      return "Select a layer to activate";
-    case "bt_command":
-      return "Select a Bluetooth command";
-    case "out_command":
-      return "Select output mode";
-    case "mouse_keycode":
-      return "Select a mouse button";
-    case "mouse_movement":
-      return "Configure movement speed (X/Y axis in pixels)";
-    case "mouse_scroll":
-      return "Configure scroll amount (X/Y axis)";
-    case "number":
-      return "Enter a numeric value";
-    default:
-      return "Configure parameter";
+function getParamTypeDescription(
+  behaviorInfo: SelectedBehaviorInfo,
+  paramNumber: 1 | 2,
+): string {
+  const overrideMeta = behaviorInfo.overrideMetadata;
+  // From DYA Studio override metadata
+  if (overrideMeta) {
+    const overrideDescription =
+      paramNumber === 1
+        ? overrideMeta.param1Description
+        : overrideMeta.param2Description;
+    if (overrideDescription) {
+      return overrideDescription;
+    }
   }
+  // From firmware metadata
+  const paramDescriptions =
+    paramNumber === 1
+      ? behaviorInfo.param1Descriptions
+      : behaviorInfo.param2Descriptions;
+  if (paramDescriptions.length == 1) {
+    return `Select ${paramDescriptions[0].name}`;
+  }
+  return `Select options`; // Contains constant from multiple options
 }
 
 /**
  * Format parameter value for display
  */
 function formatParamValue(
-  paramType: ParamType | undefined,
-  value: number,
-  layers: Array<{ id: number; name: string }>,
-  behavior: BehaviorDefinition | null,
+  behaviorInfo: SelectedBehaviorInfo,
+  param1: number,
+  param2: number,
   paramNumber: 1 | 2,
+  layers: Array<{ id: number; name: string }>,
   keyboardLayout?: KeyboardLayoutType,
 ): string {
-  // For option-based paramTypes, 0 can be a valid value (e.g., BT_CLR)
-  // Only show "Not set" for paramTypes where 0 has no meaning
-  const optionBasedTypes = new Set<ParamType>([
-    "bt_command",
-    "out_command",
-    "mouse_keycode",
-    "mouse_movement",
-    "mouse_scroll",
-    "layer",
-  ]);
-
-  if (
-    value === NO_PARAM_VALUE &&
-    paramType &&
-    !optionBasedTypes.has(paramType)
-  ) {
-    return "Not set";
+  const behavior = behaviorInfo.behavior;
+  // From DYA Studio override metadata
+  const overrideMeta = behaviorInfo.overrideMetadata;
+  if (overrideMeta?.formatParam) {
+    return overrideMeta.formatParam(param1, param2, paramNumber, {
+      layers,
+      keyboardLayout,
+    });
   }
+  // From firmware metadata
+  return formatBehaviorParam(behavior, param1, param2, paramNumber, {
+    layers,
+    keyboardLayout,
+  });
+}
 
-  switch (paramType) {
-    case "keycode": {
-      const formatted = formatKeycodeWithModifiers(value, keyboardLayout);
-      return formatted.display;
-    }
-    case "layer": {
-      const layer = layers.find((l) => l.id === value);
-      return layer?.name || `Layer ${value}`;
-    }
-    case "bt_command":
-    case "out_command": {
-      const metadata = behavior
-        ? getBehaviorMetadata(behavior.displayName)
-        : null;
-      const options = metadata ? getBehaviorParamOptions(metadata, 1) : null;
-      const option = options?.find((o) => o.value === value);
-      return option?.label || `Value ${value}`;
-    }
-    case "mouse_keycode": {
-      const mk = MOUSE_KEYCODES.find((m) => m.value === value);
-      return mk?.label || `Button ${value}`;
-    }
-    case "mouse_movement": {
-      const mm = MOUSE_MOVEMENTS.find((m) => m.value === value);
-      if (mm) {
-        return mm.label;
-      }
-      const { x, y } = decodeMouseMove(value);
-      return `X:${x} Y:${y}`;
-    }
-    case "mouse_scroll": {
-      const ms = MOUSE_SCROLLS.find((m) => m.value === value);
-      if (ms) {
-        return ms.label;
-      }
-      const { x, y } = decodeMouseMove(value);
-      return `X:${x} Y:${y}`;
-    }
-    case "number":
-      return String(value);
-    default:
-      return formatBehaviorParam(
-        getBehaviorParamInfo(behavior!, paramNumber)!,
-        value,
-        {
-          layers,
-          keyboardLayout,
-        },
-      );
+function buildSelectedBehaviorInfo(
+  behaviors: Map<number, BehaviorDefinition>,
+  selectedBehavior: number | null,
+  param1: number,
+): SelectedBehaviorInfo | null {
+  if (selectedBehavior === null) return null;
+  const behavior = behaviors.get(selectedBehavior);
+  if (!behavior) {
+    return null; // Behavior not found in the firmware - this shouldn't happen but we should handle it gracefully
   }
+  const validParamSetsForParam1 = behavior?.metadata
+    ?.map((m) => {
+      return {
+        ...m,
+        param1: m.param1.filter((desc) =>
+          filterMatchingBehaviorValueDescriptions(desc, null),
+        ),
+        param2: m.param2.filter((desc) =>
+          filterMatchingBehaviorValueDescriptions(desc, null),
+        ),
+      };
+    })
+    .filter((m) => m.param1.length > 0);
+  const param1MatchingParamSetsForParam2 = validParamSetsForParam1
+    .filter((m) => m.param2.length > 0)
+    .map((m) => {
+      return {
+        ...m,
+        param1: m.param1.filter((desc) =>
+          filterMatchingBehaviorValueDescriptions(desc, param1),
+        ),
+      };
+    })
+    .filter((m) => m.param1.length > 0);
+
+  // Use metadata if available, otherwise fall back to BehaviorDefinition.metadata
+  const overrideMetadata = getBehaviorMetadata(behavior.displayName);
+  return {
+    behavior,
+    overrideMetadata,
+    param1Descriptions: validParamSetsForParam1.flatMap((m) => m.param1),
+    param2Descriptions: param1MatchingParamSetsForParam2.flatMap(
+      (m) => m.param2,
+    ),
+  };
+}
+
+function hasParam(
+  behaviorInfo: SelectedBehaviorInfo | null,
+  paramNumber: 1 | 2,
+): boolean {
+  if (!behaviorInfo) return false;
+  const overrideMeta = behaviorInfo.overrideMetadata;
+  const overrideType =
+    paramNumber === 1 ? overrideMeta?.param1Type : overrideMeta?.param2Type;
+  if (overrideType) {
+    return true;
+  }
+  // Fallback to checking if there are any value descriptions for the parameter
+  const descriptions =
+    paramNumber === 1
+      ? behaviorInfo.param1Descriptions
+      : behaviorInfo.param2Descriptions;
+  return descriptions.length > 0;
 }
 
 // =============================================================================
@@ -249,32 +270,15 @@ export function KeycodeSelector({
   }, [selectedBehavior, param1, param2, initialValues]);
 
   // Get selected behavior info
-  const selectedBehaviorInfo = useMemo((): SelectedBehaviorInfo | null => {
-    if (selectedBehavior === null) return null;
-    const behavior = behaviors.get(selectedBehavior);
-    if (!behavior) return null;
-
-    const metadata = getBehaviorMetadata(behavior.displayName);
-    // Use metadata if available, otherwise fall back to BehaviorDefinition.metadata
-    const needsParam1Value = metadata?.param1Type
-      ? !!metadata.param1Type
-      : hasParam1(behavior);
-    const needsParam2Value = metadata?.param2Type
-      ? !!metadata.param2Type
-      : hasParam2(behavior);
-
-    return {
-      behavior,
-      needsParam1: needsParam1Value,
-      needsParam2: needsParam2Value,
-      param1Type: metadata?.param1Type,
-      param2Type: metadata?.param2Type,
-    };
-  }, [selectedBehavior, behaviors]);
+  const selectedBehaviorInfo = useMemo(
+    (): SelectedBehaviorInfo | null =>
+      buildSelectedBehaviorInfo(behaviors, selectedBehavior, param1),
+    [selectedBehavior, behaviors, param1],
+  );
 
   // Check if behavior needs parameters
-  const needsParam1 = selectedBehaviorInfo?.needsParam1 ?? false;
-  const needsParam2 = selectedBehaviorInfo?.needsParam2 ?? false;
+  const needsParam1 = hasParam(selectedBehaviorInfo, 1);
+  const needsParam2 = hasParam(selectedBehaviorInfo, 2);
   const needsAnyParam = needsParam1 || needsParam2;
 
   // Handle behavior selection from dropdown
@@ -282,7 +286,6 @@ export function KeycodeSelector({
     (behaviorId: number) => {
       const behavior = behaviors.get(behaviorId);
       if (!behavior) return;
-      const metadata = getBehaviorMetadata(behavior.displayName);
 
       setSelectedBehavior(behaviorId);
       setParam1(0);
@@ -290,10 +293,14 @@ export function KeycodeSelector({
       setActiveParam(1);
 
       // Check if behavior needs params using fallback
+      const nextSelectedBehaviorInfo = buildSelectedBehaviorInfo(
+        behaviors,
+        behaviorId,
+        0,
+      );
       const needsAnyParam =
-        metadata?.param1Type || metadata?.param2Type
-          ? !!metadata.param1Type || !!metadata.param2Type
-          : hasParam1(behavior) || hasParam2(behavior);
+        hasParam(nextSelectedBehaviorInfo, 1) ||
+        hasParam(nextSelectedBehaviorInfo, 2);
 
       // If behavior doesn't need params and closeOnSelect is enabled, apply immediately
       if (closeOnSelect && !needsAnyParam) {
@@ -308,63 +315,39 @@ export function KeycodeSelector({
     [behaviors, closeOnSelect, onSelect, onClose],
   );
 
-  // Handle quick-select (immediate apply for behaviors without params)
-  const handleQuickSelect = useCallback(
-    (behaviorId: number) => {
-      const behavior = behaviors.get(behaviorId);
-      if (!behavior) return;
-      const metadata = getBehaviorMetadata(behavior.displayName);
-
-      // Check if behavior needs params using fallback
-      const needsAnyParam =
-        metadata?.param1Type || metadata?.param2Type
-          ? !!metadata.param1Type || !!metadata.param2Type
-          : hasParam1(behavior) || hasParam2(behavior);
-
-      // If behavior doesn't need params, apply immediately
-      if (!needsAnyParam && closeOnSelect) {
-        onSelect({
-          behaviorId,
-          param1: 0,
-          param2: 0,
-        });
-        onClose();
-      } else {
-        // Otherwise, select the behavior and show params
-        setSelectedBehavior(behaviorId);
-        setParam1(0);
-        setParam2(0);
-        setActiveParam(1);
-      }
-    },
-    [behaviors, closeOnSelect, onSelect, onClose],
-  );
-
-  // Handle param1 change
   const handleParam1Change = useCallback(
     (value: number, shouldNotClose?: boolean) => {
       setParam1(value);
-      // Auto-advance to param2 if needed
+      const nextSelectedBehaviorInfo = buildSelectedBehaviorInfo(
+        behaviors,
+        selectedBehavior,
+        value,
+      );
+      const needsParam2 = hasParam(nextSelectedBehaviorInfo, 2);
       if (needsParam2) {
         setActiveParam(2);
-      } else if (
-        shouldNotClose !== true &&
-        closeOnSelect &&
-        selectedBehavior !== null
-      ) {
-        // If param1 is the last param and closeOnSelect is enabled, apply and close
-        onSelect({
-          behaviorId: selectedBehavior,
-          param1: value,
-          param2,
-        });
-        onClose();
+      } else {
+        if (
+          shouldNotClose !== true &&
+          closeOnSelect &&
+          selectedBehavior !== null
+        ) {
+          // If param1 is the last param and closeOnSelect is enabled, apply and close
+          onSelect({
+            behaviorId: selectedBehavior,
+            param1: value,
+            param2: 0,
+          });
+          onClose();
+        }
+        if (param2 !== 0) {
+          setParam2(0);
+        }
       }
     },
-    [needsParam2, closeOnSelect, selectedBehavior, param2, onSelect, onClose],
+    [behaviors, closeOnSelect, onClose, onSelect, param2, selectedBehavior],
   );
 
-  // Handle param2 change
   const handleParam2Change = useCallback(
     (value: number, shouldNotClose?: boolean) => {
       setParam2(value);
@@ -469,87 +452,19 @@ export function KeycodeSelector({
   // Render parameter value selector based on type
   const renderParamValueSelector = useCallback(
     (
-      value: number,
+      param1: number,
+      param2: number,
       onChange: (v: number, shouldNotClose?: boolean) => void,
       paramNumber: 1 | 2,
     ) => {
-      // Get paramType from selectedBehaviorInfo
-      const paramType = selectedBehaviorInfo
-        ? paramNumber === 1
-          ? selectedBehaviorInfo.param1Type
-          : selectedBehaviorInfo.param2Type
-        : undefined;
+      const value = paramNumber === 1 ? param1 : param2;
 
-      // If paramType is defined, use metadata-based rendering
-      if (paramType) {
-        switch (paramType) {
-          case "keycode":
-            return (
-              <KeycodeValueSelector
-                value={value}
-                onChange={onChange}
-                showModifiers={true}
-                keyboardLayout={keyboardLayout}
-              />
-            );
-
-          case "layer":
-            return (
-              <ButtonListSelector
-                options={layers.map((l) => ({
-                  value: l.id,
-                  label: l.name || `Layer ${l.id}`,
-                }))}
-                value={value}
-                onChange={onChange}
-                columns={Math.min(layers.length, 4)}
-              />
-            );
-
-          case "bt_command": {
-            const metadata = selectedBehaviorInfo
-              ? getBehaviorMetadata(selectedBehaviorInfo.behavior.displayName)
-              : null;
-            const options = metadata
-              ? getBehaviorParamOptions(metadata, 1)
-              : null;
-            return (
-              <ButtonListSelector
-                options={
-                  options?.map((opt) => ({
-                    value: opt.value,
-                    label: opt.label,
-                  })) || []
-                }
-                value={value}
-                onChange={onChange}
-                columns={3}
-              />
-            );
-          }
-
-          case "out_command": {
-            const metadata = selectedBehaviorInfo
-              ? getBehaviorMetadata(selectedBehaviorInfo.behavior.displayName)
-              : null;
-            const options = metadata
-              ? getBehaviorParamOptions(metadata, 1)
-              : null;
-            return (
-              <ButtonListSelector
-                options={
-                  options?.map((opt) => ({
-                    value: opt.value,
-                    label: opt.label,
-                  })) || []
-                }
-                value={value}
-                onChange={onChange}
-                columns={3}
-              />
-            );
-          }
-
+      const overrideMeta = selectedBehaviorInfo?.overrideMetadata;
+      const overrideType =
+        paramNumber === 1 ? overrideMeta?.param1Type : overrideMeta?.param2Type;
+      // From DYA Studio override metadata
+      if (overrideType) {
+        switch (overrideType) {
           case "mouse_keycode":
             return (
               <ButtonListSelector
@@ -581,90 +496,103 @@ export function KeycodeSelector({
                 isScroll={true}
               />
             );
+        }
+      }
 
-          case "number":
-          default:
-            return (
+      // Fallback: use BehaviorDefinition metadata from firmware
+      if (selectedBehaviorInfo !== null) {
+        // accumulate descriptions to collect all constants
+        const descriptions =
+          paramNumber === 1
+            ? selectedBehaviorInfo.param1Descriptions
+            : selectedBehaviorInfo.param2Descriptions;
+        const groupByType = descriptions.reduce(
+          (acc, desc) => {
+            if (desc.constant !== undefined) {
+              acc.constants.push(desc);
+            } else if (desc.range !== undefined) {
+              acc.ranges.push(desc);
+            } else if (desc.hidUsage !== undefined) {
+              acc.hidUsages.push(desc);
+            } else if (desc.layerId !== undefined) {
+              acc.layerIds.push(desc);
+            } else {
+              acc.others.push(desc);
+            }
+            return acc;
+          },
+          {
+            constants: [] as BehaviorParameterValueDescription[],
+            ranges: [] as BehaviorParameterValueDescription[],
+            layerIds: [] as BehaviorParameterValueDescription[],
+            hidUsages: [] as BehaviorParameterValueDescription[],
+            others: [] as BehaviorParameterValueDescription[],
+          },
+        );
+        return (
+          <>
+            {/* layerIds */}
+            {groupByType.layerIds.length > 0 && (
+              <ButtonListSelector
+                options={layers.map((l) => ({
+                  value: l.id,
+                  label: l.name || `Layer ${l.id}`,
+                }))}
+                value={value}
+                onChange={onChange}
+                columns={Math.min(layers.length, 4)}
+              />
+            )}
+            {/* ranges */}
+            {groupByType.ranges.length > 0 && (
+              <RangeValueSelector
+                min={groupByType.ranges.reduce(
+                  (min, desc) => Math.min(min, desc.range?.min ?? 0),
+                  Infinity,
+                )}
+                max={groupByType.ranges.reduce(
+                  (max, desc) => Math.max(max, desc.range?.max ?? 0),
+                  -Infinity,
+                )}
+                value={value}
+                onChange={onChange}
+              />
+            )}
+            {/* constants */}
+            {groupByType.constants.length > 0 && (
+              <ButtonListSelector
+                options={groupByType.constants.map((l) => ({
+                  value: l.constant!,
+                  label: `${l.name} (${l.constant})`,
+                }))}
+                value={value}
+                onChange={onChange}
+                columns={Math.min(groupByType.constants.length, 4)}
+              />
+            )}
+            {/* hidUsages */}
+            {groupByType.hidUsages.length > 0 && (
+              <KeycodeValueSelector
+                value={value}
+                onChange={onChange}
+                showModifiers={true}
+                keyboardLayout={keyboardLayout}
+              />
+            )}
+            {groupByType.others.length > 0 && (
               <input
                 type="number"
                 value={value}
                 onChange={(e) => onChange(Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-electric)]/50"
               />
-            );
-        }
+            )}
+          </>
+        );
       }
-
-      // Fallback: use BehaviorDefinition metadata
-      if (selectedBehavior !== null) {
-        const behavior = behaviors.get(selectedBehavior);
-        if (behavior) {
-          const paramInfo = getBehaviorParamInfo(behavior, paramNumber);
-          if (paramInfo) {
-            switch (paramInfo.type) {
-              case "hidUsage":
-                return (
-                  <KeycodeValueSelector
-                    value={value}
-                    onChange={onChange}
-                    showModifiers={true}
-                    keyboardLayout={keyboardLayout}
-                  />
-                );
-
-              case "layerId":
-                return (
-                  <ButtonListSelector
-                    options={layers.map((l) => ({
-                      value: l.id,
-                      label: l.name || `Layer ${l.id}`,
-                    }))}
-                    value={value}
-                    onChange={onChange}
-                    columns={Math.min(layers.length, 4)}
-                  />
-                );
-
-              case "range":
-                return (
-                  <RangeValueSelector
-                    min={paramInfo.min}
-                    max={paramInfo.max}
-                    value={value}
-                    onChange={onChange}
-                  />
-                );
-
-              case "constant":
-                return (
-                  <div className="text-center p-8">
-                    <div className="text-4xl font-mono font-bold text-[var(--color-neon)] mb-2">
-                      {paramInfo.value}
-                    </div>
-                    <div className="text-sm text-[var(--color-text-muted)]">
-                      Constant value
-                    </div>
-                  </div>
-                );
-
-              case "nil":
-                return null;
-            }
-          }
-        }
-      }
-
-      // Final fallback: generic number input
-      return (
-        <input
-          type="number"
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-electric)]/50"
-        />
-      );
+      return null;
     },
-    [layers, selectedBehaviorInfo, behaviors, selectedBehavior, keyboardLayout],
+    [layers, selectedBehaviorInfo, keyboardLayout],
   );
 
   return (
@@ -721,7 +649,7 @@ export function KeycodeSelector({
                 behaviors={behaviors}
                 selectedBehaviorId={selectedBehavior}
                 onSelect={handleBehaviorSelect}
-                onQuickSelect={handleQuickSelect}
+                onQuickSelect={handleBehaviorSelect}
                 quickSelects={behaviorQuickSelects}
               />
             )}
@@ -748,9 +676,9 @@ export function KeycodeSelector({
                     onClick={() => setActiveParam(1)}
                   >
                     <div className="font-medium text-xs">
-                      param1
+                      param1:
                       <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
-                        {getParamTypeLabel(selectedBehaviorInfo.param1Type)}
+                        {getParamTypeLabel(selectedBehaviorInfo, 1)}
                       </span>
                     </div>
                     <div
@@ -759,11 +687,11 @@ export function KeycodeSelector({
                       }`}
                     >
                       {formatParamValue(
-                        selectedBehaviorInfo.param1Type,
+                        selectedBehaviorInfo,
                         param1,
-                        layers,
-                        selectedBehaviorInfo.behavior,
+                        param2,
                         1,
+                        layers,
                         keyboardLayout,
                       )}
                     </div>
@@ -779,9 +707,9 @@ export function KeycodeSelector({
                     onClick={() => setActiveParam(2)}
                   >
                     <div className="font-medium text-xs">
-                      param2
+                      param2:
                       <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
-                        {getParamTypeLabel(selectedBehaviorInfo.param2Type)}
+                        {getParamTypeLabel(selectedBehaviorInfo, 2)}
                       </span>
                     </div>
                     <div
@@ -790,11 +718,11 @@ export function KeycodeSelector({
                       }`}
                     >
                       {formatParamValue(
-                        selectedBehaviorInfo.param2Type,
+                        selectedBehaviorInfo,
+                        param1,
                         param2,
-                        layers,
-                        selectedBehaviorInfo.behavior,
                         2,
+                        layers,
                         keyboardLayout,
                       )}
                     </div>
@@ -806,17 +734,27 @@ export function KeycodeSelector({
               <div className="px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)] hidden tablet:block">
                 <p className="text-xs text-[var(--color-text-muted)]">
                   {activeParam === 1
-                    ? getParamTypeDescription(selectedBehaviorInfo.param1Type)
-                    : getParamTypeDescription(selectedBehaviorInfo.param2Type)}
+                    ? getParamTypeDescription(selectedBehaviorInfo, 1)
+                    : getParamTypeDescription(selectedBehaviorInfo, 2)}
                 </p>
               </div>
 
               {/* Parameter Value Selector */}
               <div className="flex-1 p-4 overflow-hidden flex flex-col">
                 {activeParam === 1 && needsParam1
-                  ? renderParamValueSelector(param1, handleParam1Change, 1)
+                  ? renderParamValueSelector(
+                      param1,
+                      param2,
+                      handleParam1Change,
+                      1,
+                    )
                   : activeParam === 2 && needsParam2
-                    ? renderParamValueSelector(param2, handleParam2Change, 2)
+                    ? renderParamValueSelector(
+                        param1,
+                        param2,
+                        handleParam2Change,
+                        2,
+                      )
                     : null}
               </div>
             </div>

@@ -16,7 +16,6 @@
 
 import {
   getLayoutDisplayName,
-  getLayoutName,
   mapToLayout,
   type KeyboardLayoutType,
 } from "./keyboardLayouts";
@@ -1062,6 +1061,12 @@ export function formatKeycodeWithModifiers(
   display: string;
   rawCode: string;
 } {
+  if (hidUsage === 0) {
+    return {
+      display: "Not set",
+      rawCode: "0x0",
+    };
+  }
   const modifiers = extractModifierFlags(hidUsage);
   const baseCode = extractBaseKeycode(hidUsage);
   const hidUsageWithoutMods = dropModifierFlags(hidUsage);
@@ -1077,21 +1082,16 @@ export function formatKeycodeWithModifiers(
   // Check for layout-specific override
   let baseName =
     keycode?.displayName || `0x${baseCode.toString(16).toUpperCase()}`;
-  let fullName = keycode?.name || baseName;
 
   if (keyboardLayout) {
     const layoutDisplayName = getLayoutDisplayName(baseCode, keyboardLayout);
-    const layoutFullName = getLayoutName(baseCode, keyboardLayout);
 
     if (layoutDisplayName) {
       baseName = layoutDisplayName;
     }
-    if (layoutFullName) {
-      fullName = layoutFullName;
-    }
   }
 
-  const rawCodeHex = `0x${hidUsageWithoutMods.toString(16).toUpperCase()}`;
+  const rawCodeHex = `0x${(hidUsage >>> 0).toString(16).toUpperCase()}`;
 
   if (modifiers === 0) {
     return {
@@ -1111,7 +1111,9 @@ export function formatKeycodeWithModifiers(
 
   const modPrefix = modParts.join("+");
   return {
-    display: `${modPrefix}(${baseName}) - ${fullName}`,
+    display:
+      `${modPrefix}(${baseName})` +
+      (baseName !== rawCodeHex ? ` (${rawCodeHex})` : ""),
     rawCode: rawCodeHex,
   };
 }
