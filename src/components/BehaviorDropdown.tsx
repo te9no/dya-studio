@@ -17,8 +17,7 @@ const BEHAVIOR_CATEGORIES: { id: BehaviorCategory; name: string }[] = [
   { id: "layer", name: "Layers" },
   { id: "mod", name: "Modifiers" },
   { id: "mouse", name: "Mouse" },
-  { id: "bluetooth", name: "Bluetooth" },
-  { id: "output", name: "Output" },
+  { id: "transport", name: "Transport" },
   { id: "system", name: "System" },
   { id: "miscellaneous", name: "Misc" },
   { id: "others", name: "Others" },
@@ -91,7 +90,8 @@ export function BehaviorDropdown({
       allOptions.push({
         id,
         name: behavior.displayName,
-        displayName: behavior.displayName,
+        displayName:
+          metadata?.displayNameVariants?.at(0) || behavior.displayName,
         category,
         description: metadata?.description,
       });
@@ -138,7 +138,8 @@ export function BehaviorDropdown({
           ? {
               id: behavior.id,
               name,
-              displayName: behavior.displayName,
+              displayName:
+                metadata.displayNameVariants.at(0) || behavior.displayName,
               isRecent: false,
             }
           : null;
@@ -156,10 +157,12 @@ export function BehaviorDropdown({
       .filter((id) => !predefinedIds.has(id) && behaviors.has(id))
       .map((id) => {
         const behavior = behaviors.get(id)!;
+        const metadata = getBehaviorMetadata(behavior.displayName);
         return {
           id,
           name: behavior.displayName,
-          displayName: behavior.displayName,
+          displayName:
+            metadata?.displayNameVariants?.at(0) || behavior.displayName,
           isRecent: true,
         };
       });
@@ -170,7 +173,9 @@ export function BehaviorDropdown({
   // Current selection display
   const selectedBehavior =
     selectedBehaviorId !== null ? behaviors.get(selectedBehaviorId) : null;
-  const selectedDisplay = selectedBehavior?.displayName || "Select Behavior";
+  const selectedBehaviorOverrideMeta = selectedBehavior
+    ? getBehaviorMetadata(selectedBehavior.displayName)
+    : null;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -181,7 +186,13 @@ export function BehaviorDropdown({
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="text-sm text-[var(--color-text)]">
-          {selectedDisplay}
+          {selectedBehaviorOverrideMeta?.displayNameVariants?.at(0) ||
+            "Select behavior"}
+          {selectedBehaviorOverrideMeta?.description && (
+            <span className="mx-1 text-xs text-[var(--color-text-muted)]">
+              - {selectedBehaviorOverrideMeta.description}
+            </span>
+          )}
         </span>
         <IconChevronDown
           size={16}
