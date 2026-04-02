@@ -99,6 +99,26 @@ export function BatteryPage() {
             </button>
           </div>
         </div>
+        <div className="mb-6 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)] flex items-start gap-3">
+          <div className="p-2">
+            <IconAlertTriangleFilled size={24} />
+          </div>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Battery history feature is not stable for now. Please consider
+            <a
+              href="https://github.com/kot149/zmk-battery-center"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--color-electric)] underline mx-1"
+            >
+              zmk-battery-center
+            </a>
+            application instead. <br />
+            If you use battery history feature, be careful about recording
+            interval, if history is recorded too frequently, flush drive might
+            reach to its hardware limit soon.
+          </p>
+        </div>
         {!isAvailable && !isLoading && !error && (
           <div className="mb-6 p-4 rounded-lg bg-[var(--color-border)] border border-[var(--color-border-hover)] flex items-start gap-3">
             <div className="p-2">
