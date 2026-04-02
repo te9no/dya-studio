@@ -46,12 +46,6 @@ const tabs: TabItem[] = [
     content: <TrackballPage />,
   },
   {
-    id: "battery",
-    label: "Battery",
-    icon: <IconBattery2 size={18} />,
-    content: <BatteryPage />,
-  },
-  {
     id: "ble",
     label: "BLE",
     icon: <IconBluetooth size={18} />,
@@ -62,6 +56,12 @@ const tabs: TabItem[] = [
     label: "Settings",
     icon: <IconSettings size={18} />,
     content: <SettingsPage />,
+  },
+  {
+    id: "battery",
+    label: "Battery",
+    icon: <IconBattery2 size={18} />,
+    content: <BatteryPage />,
   },
 ];
 
