@@ -26,6 +26,10 @@ import {
   RUNTIME_SENSOR_ROTATE_IDENTIFIER,
 } from "./demo-runtime-sensor-rotate";
 import {
+  AnalogInputHandler,
+  ANALOG_INPUT_IDENTIFIER,
+} from "./demo-analog-input";
+import {
   Request as BLERequest,
   Response as BLEResponse,
 } from "../../proto/zmk/ble_management/ble_management";
@@ -45,6 +49,10 @@ import {
   Request as RuntimeSensorRotateRequest,
   Response as RuntimeSensorRotateResponse,
 } from "../../proto/zmk/runtime_sensor_rotate/runtime_sensor_rotate";
+import {
+  Request as AnalogInputRequest,
+  Response as AnalogInputResponse,
+} from "../../proto/dya/analog_input/analog_input";
 import {
   ANSI60,
   ORTHO,
@@ -152,6 +160,7 @@ class Keyboard {
   private batteryHistoryHandler = new BatteryHistoryHandler();
   private runtimeInputProcessorHandler = new RuntimeInputProcessorHandler();
   private runtimeSensorRotateHandler = new RuntimeSensorRotateHandler();
+  private analogInputHandler = new AnalogInputHandler();
 
   // Custom subsystems registry
   private readonly BLE_SUBSYSTEM_INDEX = 0;
@@ -159,6 +168,7 @@ class Keyboard {
   private readonly BATTERY_HISTORY_SUBSYSTEM_INDEX = 2;
   private readonly RUNTIME_INPUT_PROCESSOR_SUBSYSTEM_INDEX = 3;
   private readonly RUNTIME_SENSOR_ROTATE_SUBSYSTEM_INDEX = 4;
+  private readonly ANALOG_INPUT_SUBSYSTEM_INDEX = 5;
 
   private customSubsystems = [
     {
@@ -184,6 +194,11 @@ class Keyboard {
     {
       index: this.RUNTIME_SENSOR_ROTATE_SUBSYSTEM_INDEX,
       identifier: RUNTIME_SENSOR_ROTATE_IDENTIFIER,
+      uiUrl: [],
+    },
+    {
+      index: this.ANALOG_INPUT_SUBSYSTEM_INDEX,
+      identifier: ANALOG_INPUT_IDENTIFIER,
       uiUrl: [],
     },
   ];
@@ -387,6 +402,15 @@ class Keyboard {
         } catch (e) {
           console.error("Runtime Sensor Rotate subsystem error:", e);
         }
+      } else if (subsystemIndex === this.ANALOG_INPUT_SUBSYSTEM_INDEX) {
+        // Analog Input
+        try {
+          const analogReq = AnalogInputRequest.decode(data);
+          const analogResp = this.analogInputHandler.process(analogReq);
+          responseData = AnalogInputResponse.encode(analogResp).finish();
+        } catch (e) {
+          console.error("Analog Input subsystem error:", e);
+        }
       }
 
       if (responseData) {
@@ -464,6 +488,21 @@ class Keyboard {
             custom: {
               customNotification: {
                 subsystemIndex: this.RUNTIME_SENSOR_ROTATE_SUBSYSTEM_INDEX,
+                payload: payload,
+              },
+            },
+          },
+        }).finish(),
+      );
+    });
+
+    this.analogInputHandler.notify((payload: Uint8Array) => {
+      callback(
+        Response.encode({
+          notification: {
+            custom: {
+              customNotification: {
+                subsystemIndex: this.ANALOG_INPUT_SUBSYSTEM_INDEX,
                 payload: payload,
               },
             },

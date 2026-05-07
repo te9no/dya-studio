@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   IconBattery2,
   IconBluetooth,
+  IconDeviceGamepad2,
   IconHome,
   IconKeyboard,
   IconPointer,
@@ -24,6 +25,7 @@ import { BatteryPage } from "./pages/BatteryPage";
 import { BLEConnectionsPage } from "./pages/BLEConnectionsPage";
 import { KeymapPage } from "./pages/KeymapPage";
 import { TrackballPage } from "./pages/TrackballPage";
+import { AnalogStickPage } from "./pages/AnalogStickPage";
 import { SettingsPage } from "./pages/SettingsPage";
 
 const tabs: TabItem[] = [
@@ -44,6 +46,12 @@ const tabs: TabItem[] = [
     label: "Trackball",
     icon: <IconPointer size={18} />,
     content: <TrackballPage />,
+  },
+  {
+    id: "analog",
+    label: "Analog",
+    icon: <IconDeviceGamepad2 size={18} />,
+    content: <AnalogStickPage />,
   },
   {
     id: "ble",
