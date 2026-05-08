@@ -1,8 +1,14 @@
 import type { ReactNode } from "react";
-import { IconSun, IconMoon, IconPlugConnectedX } from "@tabler/icons-react";
+import {
+  IconBrandGithub,
+  IconSun,
+  IconMoon,
+  IconPlugConnectedX,
+} from "@tabler/icons-react";
 import DyaLogo from "../assets/dya.svg?react";
 import { useTheme } from "../hooks/useTheme";
 import type { ConnectionMethod } from "../components/DeviceConnection";
+import { SOURCE_CODE_URL } from "../lib/source-code";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -42,6 +48,17 @@ export function AppLayout({
 
         {/* Connection Status & Theme Toggle */}
         <div className="flex items-center gap-4">
+          <a
+            href={SOURCE_CODE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-ghost text-sm flex items-center gap-1.5"
+            aria-label="View DYA Studio source code on GitHub"
+            title="View source code on GitHub"
+          >
+            <IconBrandGithub size={18} />
+            <span className="hidden tablet:inline">Source</span>
+          </a>
           {isConnected ? (
             <>
               <div className="flex items-center gap-3">

@@ -4,11 +4,13 @@ import {
   IconUsb,
   IconDeviceDesktop,
   IconArrowUp,
+  IconBrandGithub,
 } from "@tabler/icons-react";
 import { useState, useCallback } from "react";
 import type { ConnectionMethod } from "./DeviceConnection";
 import { ConnectionNoticeDialog } from "./ConnectionNoticeDialog";
 import { hasAcceptedNotice } from "../lib/connectionNoticeStorage";
+import { SOURCE_CODE_URL } from "../lib/source-code";
 
 interface SplashScreenProps {
   onConnect: (method: ConnectionMethod) => void;
@@ -274,6 +276,16 @@ export function SplashScreen({
           ZMK community
         </a>
         .
+        <br />
+        <a
+          href={SOURCE_CODE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 underline mx-1 mt-2"
+        >
+          <IconBrandGithub size={14} />
+          Source code
+        </a>
       </motion.p>
 
       {/* Connection Notice Dialog */}
