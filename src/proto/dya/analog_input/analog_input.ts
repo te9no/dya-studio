@@ -119,6 +119,24 @@ export interface ResetDeviceRequest {
 export interface ResetDeviceResponse {
 }
 
+export interface AnalogAxisValue {
+  axisIndex: number;
+  adcChannel: number;
+  raw: number;
+  mv: number;
+  reportValue: number;
+  accumulatedDelta: number;
+}
+
+export interface GetValuesRequest {
+  id: number;
+}
+
+export interface GetValuesResponse {
+  values: AnalogAxisValue[];
+  sampledAtMs: number;
+}
+
 export interface ErrorResponse {
   message: string;
 }
@@ -130,6 +148,7 @@ export interface Request {
   setReportInterval?: SetReportIntervalRequest | undefined;
   setAxisConfig?: SetAxisConfigRequest | undefined;
   resetDevice?: ResetDeviceRequest | undefined;
+  getValues?: GetValuesRequest | undefined;
 }
 
 export interface Response {
@@ -140,6 +159,7 @@ export interface Response {
   setReportInterval?: SetReportIntervalResponse | undefined;
   setAxisConfig?: SetAxisConfigResponse | undefined;
   resetDevice?: ResetDeviceResponse | undefined;
+  getValues?: GetValuesResponse | undefined;
 }
 
 export interface DeviceChangedNotification {
@@ -1006,6 +1026,216 @@ export const ResetDeviceResponse: MessageFns<ResetDeviceResponse> = {
   },
 };
 
+function createBaseAnalogAxisValue(): AnalogAxisValue {
+  return { axisIndex: 0, adcChannel: 0, raw: 0, mv: 0, reportValue: 0, accumulatedDelta: 0 };
+}
+
+export const AnalogAxisValue: MessageFns<AnalogAxisValue> = {
+  encode(message: AnalogAxisValue, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.axisIndex !== 0) {
+      writer.uint32(8).uint32(message.axisIndex);
+    }
+    if (message.adcChannel !== 0) {
+      writer.uint32(16).uint32(message.adcChannel);
+    }
+    if (message.raw !== 0) {
+      writer.uint32(24).uint32(message.raw);
+    }
+    if (message.mv !== 0) {
+      writer.uint32(32).int32(message.mv);
+    }
+    if (message.reportValue !== 0) {
+      writer.uint32(40).int32(message.reportValue);
+    }
+    if (message.accumulatedDelta !== 0) {
+      writer.uint32(48).int32(message.accumulatedDelta);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AnalogAxisValue {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAnalogAxisValue();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.axisIndex = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.adcChannel = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.raw = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.mv = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.reportValue = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.accumulatedDelta = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<AnalogAxisValue>): AnalogAxisValue {
+    return AnalogAxisValue.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AnalogAxisValue>): AnalogAxisValue {
+    const message = createBaseAnalogAxisValue();
+    message.axisIndex = object.axisIndex ?? 0;
+    message.adcChannel = object.adcChannel ?? 0;
+    message.raw = object.raw ?? 0;
+    message.mv = object.mv ?? 0;
+    message.reportValue = object.reportValue ?? 0;
+    message.accumulatedDelta = object.accumulatedDelta ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetValuesRequest(): GetValuesRequest {
+  return { id: 0 };
+}
+
+export const GetValuesRequest: MessageFns<GetValuesRequest> = {
+  encode(message: GetValuesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).uint32(message.id);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetValuesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetValuesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<GetValuesRequest>): GetValuesRequest {
+    return GetValuesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetValuesRequest>): GetValuesRequest {
+    const message = createBaseGetValuesRequest();
+    message.id = object.id ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetValuesResponse(): GetValuesResponse {
+  return { values: [], sampledAtMs: 0 };
+}
+
+export const GetValuesResponse: MessageFns<GetValuesResponse> = {
+  encode(message: GetValuesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.values) {
+      AnalogAxisValue.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.sampledAtMs !== 0) {
+      writer.uint32(16).uint32(message.sampledAtMs);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetValuesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetValuesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.values.push(AnalogAxisValue.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.sampledAtMs = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create(base?: DeepPartial<GetValuesResponse>): GetValuesResponse {
+    return GetValuesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetValuesResponse>): GetValuesResponse {
+    const message = createBaseGetValuesResponse();
+    message.values = object.values?.map((e) => AnalogAxisValue.fromPartial(e)) || [];
+    message.sampledAtMs = object.sampledAtMs ?? 0;
+    return message;
+  },
+};
+
 function createBaseErrorResponse(): ErrorResponse {
   return { message: "" };
 }
@@ -1060,6 +1290,7 @@ function createBaseRequest(): Request {
     setReportInterval: undefined,
     setAxisConfig: undefined,
     resetDevice: undefined,
+    getValues: undefined,
   };
 }
 
@@ -1082,6 +1313,9 @@ export const Request: MessageFns<Request> = {
     }
     if (message.resetDevice !== undefined) {
       ResetDeviceRequest.encode(message.resetDevice, writer.uint32(50).fork()).join();
+    }
+    if (message.getValues !== undefined) {
+      GetValuesRequest.encode(message.getValues, writer.uint32(58).fork()).join();
     }
     return writer;
   },
@@ -1141,6 +1375,14 @@ export const Request: MessageFns<Request> = {
           message.resetDevice = ResetDeviceRequest.decode(reader, reader.uint32());
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.getValues = GetValuesRequest.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1173,6 +1415,9 @@ export const Request: MessageFns<Request> = {
     message.resetDevice = (object.resetDevice !== undefined && object.resetDevice !== null)
       ? ResetDeviceRequest.fromPartial(object.resetDevice)
       : undefined;
+    message.getValues = (object.getValues !== undefined && object.getValues !== null)
+      ? GetValuesRequest.fromPartial(object.getValues)
+      : undefined;
     return message;
   },
 };
@@ -1186,6 +1431,7 @@ function createBaseResponse(): Response {
     setReportInterval: undefined,
     setAxisConfig: undefined,
     resetDevice: undefined,
+    getValues: undefined,
   };
 }
 
@@ -1211,6 +1457,9 @@ export const Response: MessageFns<Response> = {
     }
     if (message.resetDevice !== undefined) {
       ResetDeviceResponse.encode(message.resetDevice, writer.uint32(58).fork()).join();
+    }
+    if (message.getValues !== undefined) {
+      GetValuesResponse.encode(message.getValues, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -1278,6 +1527,14 @@ export const Response: MessageFns<Response> = {
           message.resetDevice = ResetDeviceResponse.decode(reader, reader.uint32());
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.getValues = GetValuesResponse.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1312,6 +1569,9 @@ export const Response: MessageFns<Response> = {
       : undefined;
     message.resetDevice = (object.resetDevice !== undefined && object.resetDevice !== null)
       ? ResetDeviceResponse.fromPartial(object.resetDevice)
+      : undefined;
+    message.getValues = (object.getValues !== undefined && object.getValues !== null)
+      ? GetValuesResponse.fromPartial(object.getValues)
       : undefined;
     return message;
   },

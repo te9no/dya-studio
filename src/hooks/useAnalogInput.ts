@@ -17,12 +17,13 @@ import {
   Response,
   Notification,
   type AnalogAxisConfig,
+  type AnalogAxisValue,
   type AnalogInputDevice,
 } from "../proto/dya/analog_input/analog_input";
 
 export { AnalogRole };
 export { AnalogResponseCurve };
-export type { AnalogAxisConfig, AnalogInputDevice };
+export type { AnalogAxisConfig, AnalogAxisValue, AnalogInputDevice };
 
 const SUBSYSTEM_IDENTIFIER = "dya_analog_input";
 
@@ -36,6 +37,10 @@ export interface UseAnalogInputReturn {
   setReportInterval: (id: number, valueMs: number) => Promise<void>;
   setAxisConfig: (deviceId: number, axis: AnalogAxisConfig) => Promise<void>;
   resetDevice: (id: number) => Promise<void>;
+  getValues: (id: number) => Promise<{
+    values: AnalogAxisValue[];
+    sampledAtMs: number;
+  } | null>;
 }
 
 function replaceDevice(
@@ -229,6 +234,23 @@ export function useAnalogInput(): UseAnalogInputReturn {
     [callSubsystem, loadDevices],
   );
 
+  const getValues = useCallback(
+    async (id: number) => {
+      try {
+        const response = await callSubsystem({ getValues: { id } });
+        if (!response?.getValues) return null;
+        return response.getValues;
+      } catch (err) {
+        console.error("Failed to get analog values:", err);
+        setError(
+          `Failed to get analog values: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+        return null;
+      }
+    },
+    [callSubsystem],
+  );
+
   useEffect(() => {
     if (subsystemIndex !== undefined && zmkApp?.state.connection) {
       loadDevices();
@@ -245,5 +267,6 @@ export function useAnalogInput(): UseAnalogInputReturn {
     setReportInterval,
     setAxisConfig,
     resetDevice,
+    getValues,
   };
 }

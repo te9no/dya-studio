@@ -3,6 +3,7 @@
   AnalogResponseCurve,
   Notification,
   type AnalogAxisConfig,
+  type AnalogAxisValue,
   type AnalogInputDevice,
   type Request,
   type Response,
@@ -60,6 +61,7 @@ export class AnalogInputHandler {
   private devices: AnalogInputDevice[] = JSON.parse(
     JSON.stringify(DEFAULT_DEVICES),
   );
+  private startedAt = Date.now();
 
   process(request: Request): Response {
     if (request.listDevices !== undefined) {
@@ -122,6 +124,19 @@ export class AnalogInputHandler {
       return { resetDevice: {} };
     }
 
+    if (request.getValues !== undefined) {
+      const device = this.findDevice(request.getValues.id);
+      if (!device)
+        return { error: { message: "Analog input device not found" } };
+
+      return {
+        getValues: {
+          values: device.axes.map((axis) => this.demoValue(axis)),
+          sampledAtMs: Date.now() - this.startedAt,
+        },
+      };
+    }
+
     return { error: { message: "Not implemented" } };
   }
 
@@ -147,6 +162,42 @@ export class AnalogInputHandler {
       scaleDivisor: Math.max(1, axis.scaleDivisor),
       outputMin: Math.max(0, Math.min(127, axis.outputMin)),
       outputMax: Math.max(1, Math.min(127, axis.outputMax)),
+    };
+  }
+
+  private demoValue(axis: AnalogAxisConfig): AnalogAxisValue {
+    const t = (Date.now() - this.startedAt) / 1000;
+    const phase = axis.axisIndex === 0 ? 0 : Math.PI / 2;
+    const travel = Math.sin(t * 1.8 + phase);
+    const mv = Math.round(axis.mvMid + travel * axis.mvMinMax * 0.55);
+    const raw = Math.max(0, Math.min(4095, Math.round((mv / 3300) * 4095)));
+    const amount = Math.abs(mv - axis.mvMid);
+    const activeRange = Math.max(1, axis.mvMinMax - axis.mvDeadzone);
+    const normalized =
+      amount <= axis.mvDeadzone
+        ? 0
+        : Math.min(1, (amount - axis.mvDeadzone) / activeRange);
+    const curved =
+      axis.responseCurve === AnalogResponseCurve.ANALOG_RESPONSE_CURVE_SOFT
+        ? Math.sqrt(normalized)
+        : axis.responseCurve ===
+            AnalogResponseCurve.ANALOG_RESPONSE_CURVE_AGGRESSIVE
+          ? normalized * normalized
+          : normalized;
+    const scaled =
+      (axis.outputMin + (axis.outputMax - axis.outputMin) * curved) *
+      axis.scaleMultiplier /
+      Math.max(1, axis.scaleDivisor);
+    const sign = mv >= axis.mvMid ? 1 : -1;
+    const reportValue = Math.round((axis.invert ? -sign : sign) * scaled);
+
+    return {
+      axisIndex: axis.axisIndex,
+      adcChannel: axis.adcChannel,
+      raw,
+      mv,
+      reportValue,
+      accumulatedDelta: reportValue,
     };
   }
 
