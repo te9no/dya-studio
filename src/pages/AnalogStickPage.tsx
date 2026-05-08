@@ -8,8 +8,15 @@ import {
   AnalogResponseCurve,
   AnalogRole,
   type AnalogAxisConfig,
+  type AnalogAxisValue,
   useAnalogInput,
 } from "../hooks/useAnalogInput";
+import { AnalogValueMonitor } from "../components/AnalogValueMonitor";
+import {
+  ANALOG_LOG_LIMIT,
+  buildAnalogLogCsv,
+  type AnalogLogSample,
+} from "../lib/analog-log";
 
 const ROLE_OPTIONS: { value: AnalogRole; label: string; zmk: string }[] = [
   {
@@ -438,15 +445,22 @@ export function AnalogStickPage() {
     setReportInterval,
     setAxisConfig,
     resetDevice,
+    getValues,
   } = useAnalogInput();
 
   const device = devices[0] ?? null;
+  const [liveValues, setLiveValues] = useState<AnalogAxisValue[]>([]);
+  const [sampledAtMs, setSampledAtMs] = useState<number | null>(null);
+  const [logSamples, setLogSamples] = useState<AnalogLogSample[]>([]);
+  const [isLogging, setIsLogging] = useState(true);
   const [draftSamplingHz, setDraftSamplingHz] = useState<number | null>(null);
   const [draftReportIntervalMs, setDraftReportIntervalMs] = useState<
     number | null
   >(null);
   const samplingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reportTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const logSequenceRef = useRef(0);
+  const logDeviceIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -454,6 +468,73 @@ export function AnalogStickPage() {
       if (reportTimerRef.current) clearTimeout(reportTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!device || !isAvailable) {
+      logDeviceIdRef.current = null;
+      return;
+    }
+
+    let cancelled = false;
+    let inFlight = false;
+    const deviceChanged = logDeviceIdRef.current !== device.id;
+    if (deviceChanged) {
+      logDeviceIdRef.current = device.id;
+      logSequenceRef.current = 0;
+    }
+    let resetLog = deviceChanged;
+
+    const refreshValues = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      const response = await getValues(device.id);
+      inFlight = false;
+      if (cancelled || !response) return;
+      setLiveValues(response.values);
+      setSampledAtMs(response.sampledAtMs);
+      if (resetLog && !isLogging) {
+        setLogSamples([]);
+      }
+      if (isLogging) {
+        const sample: AnalogLogSample = {
+          sequence: logSequenceRef.current++,
+          receivedAt: Date.now(),
+          sampledAtMs: response.sampledAtMs,
+          values: response.values,
+        };
+        setLogSamples((prev) =>
+          resetLog ? [sample] : [...prev, sample].slice(-ANALOG_LOG_LIMIT),
+        );
+      }
+      resetLog = false;
+    };
+
+    void refreshValues();
+    const interval = window.setInterval(refreshValues, 100);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [device, getValues, isAvailable, isLogging]);
+
+  const clearLog = () => {
+    setLogSamples([]);
+    logSequenceRef.current = 0;
+  };
+
+  const exportLogCsv = () => {
+    if (logSamples.length === 0) return;
+    const blob = new Blob([buildAnalogLogCsv(logSamples)], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `analog-input-log-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const queueSamplingHzSave = (value: number) => {
     if (!device) return;
@@ -539,6 +620,16 @@ export function AnalogStickPage() {
 
         {device && (
           <div className="space-y-6">
+            <AnalogValueMonitor
+              values={liveValues}
+              sampledAtMs={sampledAtMs}
+              logSamples={logSamples}
+              isLogging={isLogging}
+              onToggleLogging={() => setIsLogging((current) => !current)}
+              onClearLog={clearLog}
+              onExportCsv={exportLogCsv}
+            />
+
             <div className="glass-card p-6">
               <div className="flex items-start justify-between gap-4 mb-5">
                 <div>
