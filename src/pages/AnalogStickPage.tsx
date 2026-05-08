@@ -562,7 +562,7 @@ export function AnalogStickPage() {
               Analog Stick Settings
             </h1>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Tune MeKaBu analog input roles, calibration, deadzone, and scaling
+              Tune analog input roles, calibration, deadzone, and scaling
             </p>
           </div>
         </div>
