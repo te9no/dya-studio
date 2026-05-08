@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
   IconBrandGithub,
+  IconExternalLink,
   IconSun,
   IconMoon,
   IconPlugConnectedX,
@@ -8,7 +9,7 @@ import {
 import DyaLogo from "../assets/dya.svg?react";
 import { useTheme } from "../hooks/useTheme";
 import type { ConnectionMethod } from "../components/DeviceConnection";
-import { SOURCE_CODE_URL } from "../lib/source-code";
+import { OFFICIAL_DYA_STUDIO_URL, SOURCE_CODE_URL } from "../lib/source-code";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -48,6 +49,17 @@ export function AppLayout({
 
         {/* Connection Status & Theme Toggle */}
         <div className="flex items-center gap-4">
+          <a
+            href={OFFICIAL_DYA_STUDIO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-ghost text-sm flex items-center gap-1.5"
+            aria-label="Open the official DYA Studio"
+            title="Official DYA Studio by cormoran"
+          >
+            <IconExternalLink size={18} />
+            <span className="hidden tablet:inline">Official</span>
+          </a>
           <a
             href={SOURCE_CODE_URL}
             target="_blank"

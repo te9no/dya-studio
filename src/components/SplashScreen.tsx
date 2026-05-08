@@ -5,12 +5,13 @@ import {
   IconDeviceDesktop,
   IconArrowUp,
   IconBrandGithub,
+  IconExternalLink,
 } from "@tabler/icons-react";
 import { useState, useCallback } from "react";
 import type { ConnectionMethod } from "./DeviceConnection";
 import { ConnectionNoticeDialog } from "./ConnectionNoticeDialog";
 import { hasAcceptedNotice } from "../lib/connectionNoticeStorage";
-import { SOURCE_CODE_URL } from "../lib/source-code";
+import { OFFICIAL_DYA_STUDIO_URL, SOURCE_CODE_URL } from "../lib/source-code";
 
 interface SplashScreenProps {
   onConnect: (method: ConnectionMethod) => void;
@@ -276,6 +277,18 @@ export function SplashScreen({
           ZMK community
         </a>
         .
+        <br />
+        This modified build is based on the official
+        <a
+          href={OFFICIAL_DYA_STUDIO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 underline mx-1"
+        >
+          <IconExternalLink size={14} />
+          DYA Studio
+        </a>
+        by cormoran.
         <br />
         <a
           href={SOURCE_CODE_URL}
