@@ -221,8 +221,7 @@ function AxisCard({
             {draftAxis.name || `Axis ${draftAxis.axisIndex}`}
           </h3>
           <p className="text-xs text-[var(--color-text-muted)]">
-            ADC {draftAxis.adcChannel} {"->"} {roleLabel(draftAxis.role)} /
-            active range {lowMv}-{highMv}mV
+            {roleLabel(draftAxis.role)} / active range {lowMv}-{highMv}mV
           </p>
         </div>
         <Switch.Root
@@ -254,19 +253,6 @@ function AxisCard({
       </div>
 
       <div className="grid grid-cols-1 tablet:grid-cols-2 gap-5">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm text-[var(--color-text-secondary)]">
-              ADC Channel
-            </label>
-            <span className="text-sm font-mono text-[var(--color-electric)]">
-              {draftAxis.adcChannel}
-            </span>
-          </div>
-          <p className="text-xs text-[var(--color-text-muted)]">
-            ADC channel is fixed by the keyboard devicetree wiring.
-          </p>
-        </div>
         <NumberField
           label="Center Voltage"
           value={draftAxis.mvMid}

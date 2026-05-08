@@ -213,9 +213,6 @@ export function AnalogValueMonitor({
                 <p className="text-sm text-[var(--color-text)]">
                   Axis {value.axisIndex}
                 </p>
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  ADC channel {value.adcChannel}
-                </p>
               </div>
               <span className="text-lg font-mono text-[var(--color-electric)]">
                 {value.reportValue}
