@@ -89,5 +89,6 @@
       "@cormoran/zmk-studio-react-hook",
       "@zmkfirmware/zmk-studio-ts-client"
     ]
-  }
+  },
+  "packageManager": "npm@10.9.7"
 }
