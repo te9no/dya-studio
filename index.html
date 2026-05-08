@@ -14,20 +14,19 @@
     <meta property="og:url" content="https://studio.dya.cormoran.works" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@cormoran707" />
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-L1WWDC5MY9"
+    ></script>
     <script>
-      const GA_ID = "%VITE_GOOGLE_ANALYTICS_ID%";
-      const s = document.createElement("script");
-      s.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
-      s.async = true;
-      document.head.appendChild(s);
-
       window.dataLayer = window.dataLayer || [];
       function gtag() {
         dataLayer.push(arguments);
       }
       gtag("js", new Date());
 
-      gtag("config", GA_ID);
+      gtag("config", "G-L1WWDC5MY9");
     </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
